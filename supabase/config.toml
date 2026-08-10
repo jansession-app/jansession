@@ -1,0 +1,15 @@
+project_id = "jansession"
+
+[auth]
+site_url = "http://127.0.0.1:5173/jansession/"
+additional_redirect_urls = [
+  "http://127.0.0.1:5173/jansession/**",
+  "http://localhost:5173/jansession/**",
+  "https://YOUR_GITHUB_USERNAME.github.io/jansession/**"
+]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
