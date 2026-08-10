@@ -4,6 +4,7 @@ import { canAddToSetlist, deriveSongStatus } from '../domain/songStatus'
 import type { AppData, Jam, JamRole, PreparationState, RoleSlot, Song } from '../domain/types'
 import { useAuth } from '../auth/AuthGate'
 import { loadSupabaseData, remoteMutations, subscribeToCollaborativeChanges } from './supabaseRepository'
+import { reportDataError } from './errors'
 import { STORAGE_KEYS } from '../config/brand'
 
 const STORAGE_KEY = STORAGE_KEYS.demo
@@ -83,7 +84,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       void loadSupabaseData(user.id).then((snapshot) => {
         if (active) { setData(snapshot); setLoading(false); setSyncError('') }
       }).catch((error: unknown) => {
-        if (active) { setLoading(false); setSyncError(error instanceof Error ? error.message : 'Impossibile caricare i dati.') }
+        reportDataError('Caricamento dati Supabase non riuscito', error)
+        if (active) { setLoading(false); setSyncError('Impossibile caricare i dati.') }
       })
     }
     reload()
@@ -94,7 +96,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const update = useCallback((recipe: (current: AppData) => AppData) => setData((current) => recipe(current)), [])
   const runRemote = useCallback((makeWork: () => Promise<unknown>) => {
     if (isDemo) return
-    void makeWork().catch((error: unknown) => setSyncError(error instanceof Error ? error.message : 'Modifica non salvata.'))
+    void makeWork().catch((error: unknown) => {
+      reportDataError('Modifica Supabase non salvata', error)
+      setSyncError('Modifica non salvata.')
+    })
   }, [isDemo])
 
   const actions = useMemo<DataActions>(() => ({
