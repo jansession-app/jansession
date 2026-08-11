@@ -3,15 +3,14 @@ import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { SongCard } from '../components/SongCard'
 import { useData } from '../data/DataContext'
-import { formatJamDate, songDetails } from '../data/selectors'
+import { formatJamDate, jamsForUser, songDetails } from '../data/selectors'
 import { PRODUCT_NAME } from '../config/brand'
 import { PREPARATION_LABELS } from '../domain/labels'
 
 export function HomePage() {
   const { data } = useData()
   const me = data.profiles.find((profile) => profile.id === data.currentUserId)
-  const myJamIds = new Set(data.members.filter((member) => member.userId === data.currentUserId).map((member) => member.jamId))
-  const myJams = data.jams.filter((jam) => myJamIds.has(jam.id))
+  const myJams = jamsForUser(data)
   const myAssignments = data.assignments
     .filter((assignment) => assignment.userId === data.currentUserId)
     .flatMap((assignment) => {

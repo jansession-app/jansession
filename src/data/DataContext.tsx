@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthGate'
 import { loadSupabaseData, remoteMutations, subscribeToCollaborativeChanges } from './supabaseRepository'
 import { reportDataError } from './errors'
 import { STORAGE_KEYS } from '../config/brand'
+import { canDeleteJam, removeJamFromData } from './jamDeletion'
 
 const STORAGE_KEY = STORAGE_KEYS.demo
 
@@ -39,6 +40,7 @@ interface DataActions {
   moveSetlist: (songId: string, direction: -1 | 1) => void
   updateProfile: (displayName: string, instruments: string[]) => void
   updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
+  deleteJam: (jamId: string) => Promise<boolean>
   updateMemberRole: (jamId: string, userId: string, role: JamRole) => void
   removeMember: (jamId: string, userId: string) => void
   removeSong: (songId: string) => void
@@ -214,6 +216,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updateJam(jamId, changes) {
       runRemote(() => remoteMutations.updateJam(jamId, changes))
       update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, ...changes } : jam) }))
+    },
+    async deleteJam(jamId) {
+      const jam = data.jams.find((item) => item.id === jamId)
+      if (!canDeleteJam(jam, data.currentUserId)) {
+        setSyncError('Solo il proprietario può eliminare questa jam.')
+        return false
+      }
+      setSyncError('')
+      try {
+        if (!isDemo) await remoteMutations.deleteJam(jamId)
+        update((current) => removeJamFromData(current, jamId))
+        if (window.localStorage.getItem(STORAGE_KEYS.activeJam) === jamId) {
+          window.localStorage.removeItem(STORAGE_KEYS.activeJam)
+        }
+        return true
+      } catch (error: unknown) {
+        reportDataError('Eliminazione jam Supabase non riuscita', error)
+        setSyncError('Non è stato possibile eliminare la jam. Riprova.')
+        return false
+      }
     },
     updateMemberRole(jamId, userId, role) {
       runRemote(() => remoteMutations.updateMemberRole(jamId, userId, role))

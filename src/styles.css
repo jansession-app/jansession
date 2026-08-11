@@ -311,6 +311,12 @@ button:not(:disabled):active, a:active { opacity: .78; transform: translateY(1px
 .switch-list strong { margin-bottom: 3px; font-size: 11px; }
 .switch-list small { color: var(--ink-soft); font-size: 9px; line-height: 1.35; }
 .switch-list input { width: 40px; height: 22px; accent-color: var(--accent); }
+.jam-delete-section { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); }
+.jam-delete-section h2 { margin-bottom: 6px; font-size: 15px; letter-spacing: -.015em; }
+.jam-delete-section > p:not(.form-error) { max-width: 470px; margin-bottom: 10px; color: var(--ink-soft); font-size: 10px; line-height: 1.45; }
+.delete-jam-action { min-height: 38px; padding: 0; display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--incomplete); font-size: 11px; font-weight: 650; cursor: pointer; }
+.delete-jam-action:disabled { opacity: .45; cursor: not-allowed; }
+.jam-delete-section .form-error { margin-top: 10px; }
 .partner-credit { margin: 34px 0 0; padding-top: 18px; border-top: 1px solid var(--line); color: #918c85; font-size: 10px; text-align: center; }
 .demo-tools { margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 9px; color: #99948d; }
 .demo-note { margin: 0; font-size: 9px; }

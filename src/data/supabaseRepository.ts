@@ -157,6 +157,11 @@ export const remoteMutations = {
     const { error } = await requireClient().from('jams').update(patch).eq('id', jamId)
     if (error) throw error
   },
+  async deleteJam(jamId: string) {
+    const { error, count } = await requireClient().from('jams').delete({ count: 'exact' }).eq('id', jamId)
+    if (error) throw error
+    if (count !== 1) throw new Error('La cancellazione non ha interessato alcuna jam.')
+  },
   async updateMemberRole(jamId: string, userId: string, role: JamMember['role']) {
     const { error } = await requireClient().from('jam_members').update({ role }).eq('jam_id', jamId).eq('user_id', userId)
     if (error) throw error
