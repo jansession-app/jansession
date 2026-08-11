@@ -1,6 +1,6 @@
-import { ArrowLeft } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { BackControl } from '../components/BackControl'
 import { useData } from '../data/DataContext'
 
 export function EditSongPage() {
@@ -17,5 +17,12 @@ export function EditSongPage() {
     actions.updateSong(songId, { title: title.trim(), artist: artist.trim(), listeningUrl: listeningUrl.trim() || undefined })
     navigate(`/jam/${jamId}/song/${songId}`)
   }
-  return <main className="page form-page app-screen"><div className="screen-bar"><Link className="back-link" to={`/jam/${jamId}/song/${songId}`}><ArrowLeft size={18} /> Annulla</Link></div><header><p className="eyebrow">Correggi proposta</p><h1>Modifica brano</h1><p>Aggiorna le informazioni. La formazione e la preparazione restano intatte.</p></header><form onSubmit={submit}><label className="field"><span>Titolo</span><input required value={title} onChange={(event) => setTitle(event.target.value)} /></label><label className="field"><span>Artista</span><input required value={artist} onChange={(event) => setArtist(event.target.value)} /></label><label className="field"><span>Link per ascoltarla</span><input type="url" value={listeningUrl} onChange={(event) => setListeningUrl(event.target.value)} /></label><button className="primary-button full-button">Salva proposta</button></form></main>
+  return <main className="page form-page song-form-page app-screen">
+    <header className="flow-header"><BackControl to={`/jam/${jamId}/song/${songId}`} label="Torna al brano" /><h1>Modifica brano</h1></header>
+    <form onSubmit={submit}><section className="form-section"><h2>Brano</h2>
+      <label className="field"><span>Titolo</span><input required value={title} onChange={(event) => setTitle(event.target.value)} /></label>
+      <label className="field"><span>Artista</span><input required value={artist} onChange={(event) => setArtist(event.target.value)} /></label>
+      <label className="field"><span>Link di ascolto</span><input type="url" value={listeningUrl} onChange={(event) => setListeningUrl(event.target.value)} /></label>
+    </section><button className="primary-button full-button">Salva proposta</button></form>
+  </main>
 }

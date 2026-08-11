@@ -1,5 +1,7 @@
 import { CalendarRange, UserRound } from 'lucide-react'
-import { Link, Navigate, Outlet, useLocation, useParams } from 'react-router-dom'
+import { forwardRef, useEffect, useRef, type ReactNode } from 'react'
+import { AnimatePresence, LayoutGroup, motion, useIsPresent, useReducedMotion } from 'motion/react'
+import { Link, Navigate, Outlet, useLocation, useOutlet, useParams } from 'react-router-dom'
 import { useData } from '../data/DataContext'
 import { preserveAfterOnboardingRoute } from '../invites/inviteFlow'
 import { activeGlobalNavigation, GLOBAL_NAVIGATION } from '../navigation'
@@ -7,6 +9,17 @@ import { activeGlobalNavigation, GLOBAL_NAVIGATION } from '../navigation'
 export function RootShell() {
   const { data, mode, loading, syncError } = useData()
   const location = useLocation()
+  const outlet = useOutlet()
+  const reduceMotion = useReducedMotion()
+  const currentDepth = routeDepth(location.pathname)
+  const previousDepth = useRef(currentDepth)
+  const direction = currentDepth === previousDepth.current
+    ? (location.pathname === '/profile' ? 1 : -1)
+    : currentDepth > previousDepth.current ? 1 : -1
+
+  useEffect(() => {
+    previousDepth.current = currentDepth
+  }, [currentDepth])
 
   if (loading) return <div className="auth-loading"><span>Caricamento…</span></div>
   const profile = mode === 'supabase' ? data.profiles.find((item) => item.id === data.currentUserId) : null
@@ -16,21 +29,66 @@ export function RootShell() {
   }
   const showNavigation = !location.pathname.startsWith('/join/')
   return (
-    <div className="app-root">
-      {syncError && <div className="sync-error" role="alert">{syncError}</div>}
-      <div className="view-transition" key={location.key}><Outlet /></div>
-      {showNavigation && <GlobalNavigation pathname={location.pathname} />}
-    </div>
+    <LayoutGroup id="app-navigation">
+      <div className="app-root">
+        {syncError && <div className="sync-error" role="alert">{syncError}</div>}
+        <div className="route-stage">
+          <AnimatePresence initial={false} mode="popLayout" custom={direction}>
+            <RouteLayer
+              key={location.pathname}
+              direction={direction}
+              reduceMotion={Boolean(reduceMotion)}
+            >
+              {outlet}
+            </RouteLayer>
+          </AnimatePresence>
+        </div>
+        {showNavigation && <GlobalNavigation pathname={location.pathname} />}
+      </div>
+    </LayoutGroup>
   )
 }
+
+const RouteLayer = forwardRef<HTMLDivElement, { children: ReactNode; direction: number; reduceMotion: boolean }>(function RouteLayer({ children, direction, reduceMotion }, ref) {
+  const isPresent = useIsPresent()
+
+  return (
+    <motion.div
+      ref={ref}
+      className="view-transition"
+      data-route-presence={isPresent ? 'present' : 'exiting'}
+      aria-hidden={!isPresent}
+      layoutScroll
+      custom={direction}
+      initial={reduceMotion ? false : { x: direction * 28, scale: 0.992 }}
+      animate={{ x: 0, scale: 1 }}
+      exit={reduceMotion ? { x: 0, scale: 1 } : { x: direction * -18, scale: 0.995 }}
+      transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 410, damping: 38, mass: 0.72 }}
+    >
+      {children}
+    </motion.div>
+  )
+})
 
 function GlobalNavigation({ pathname }: { pathname: string }) {
   const activeArea = activeGlobalNavigation(pathname)
   const icons = { jams: CalendarRange, profile: UserRound }
   return <nav className="bottom-nav" aria-label="Navigazione principale">{GLOBAL_NAVIGATION.map(({ key, to, label }) => {
     const Icon = icons[key]
-    return <Link key={key} to={to} className={activeArea === key ? 'active' : ''} aria-current={activeArea === key ? 'page' : undefined}><Icon size={21} strokeWidth={2} aria-hidden="true" /><span>{label}</span></Link>
+    const active = activeArea === key
+    return <Link key={key} to={to} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
+      {active && <motion.span className="bottom-nav-indicator" layoutId="global-navigation-indicator" transition={{ type: 'spring', stiffness: 440, damping: 34, mass: 0.7 }} />}
+      <span className="bottom-nav-icon"><Icon size={20} strokeWidth={2} aria-hidden="true" /></span>
+      <span className="bottom-nav-label">{label}</span>
+    </Link>
   })}</nav>
+}
+
+function routeDepth(pathname: string) {
+  if (!pathname.startsWith('/jam/')) return 0
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length <= 2) return 1
+  return segments[2] === 'song' ? 3 : 2
 }
 
 export function JamShell() {

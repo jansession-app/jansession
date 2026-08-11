@@ -1,6 +1,8 @@
-import { ArrowLeft, Minus, Plus, Trash2 } from 'lucide-react'
+import { Minus, Plus, Trash2 } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { BackControl } from '../components/BackControl'
 import { useData } from '../data/DataContext'
 import { INSTRUMENTS } from '../domain/types'
 import { jamRoutes } from '../navigation'
@@ -23,6 +25,7 @@ export function ProposeSongPage() {
   const [listeningUrl, setListeningUrl] = useState('')
   const [roles, setRoles] = useState<RoleInput[]>(defaultRoles)
   const [newRole, setNewRole] = useState('Tastiere')
+  const reduceMotion = useReducedMotion()
 
   const updateQuantity = (instrument: string, delta: number) => setRoles((current) => current.map((role) => role.instrument === instrument ? { ...role, quantity: Math.max(1, role.quantity + delta) } : role))
   const addRole = () => {
@@ -38,29 +41,29 @@ export function ProposeSongPage() {
   }
 
   return (
-    <main className="page form-page app-screen">
-      <div className="screen-bar"><Link className="back-link" to={jamRoutes(jamId).songs}><ArrowLeft size={18} aria-hidden="true" /> Brani</Link></div>
-      <header><p className="eyebrow">Nuova proposta</p><h1>Che cosa suoniamo?</h1><p>Indica il brano e la formazione esatta che serve.</p></header>
+    <main className="page form-page song-form-page app-screen">
+      <header className="flow-header"><BackControl to={jamRoutes(jamId).songs} label="Torna a Brani" /><h1>Proponi brano</h1></header>
       <form onSubmit={submit}>
-        <label className="field"><span>Titolo</span><input autoFocus required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="es. Reptilia" /></label>
-        <label className="field"><span>Artista</span><input required value={artist} onChange={(event) => setArtist(event.target.value)} placeholder="es. The Strokes" /></label>
-        <label className="field"><span>Link per ascoltarla <em>opzionale</em></span><input type="url" value={listeningUrl} onChange={(event) => setListeningUrl(event.target.value)} placeholder="https://…" /></label>
+        <section className="form-section"><h2>Brano</h2>
+          <label className="field"><span>Titolo</span><input required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Reptilia" /></label>
+          <label className="field"><span>Artista</span><input required value={artist} onChange={(event) => setArtist(event.target.value)} placeholder="The Strokes" /></label>
+          <label className="field"><span>Link di ascolto <em>opzionale</em></span><input type="url" value={listeningUrl} onChange={(event) => setListeningUrl(event.target.value)} placeholder="https://…" /></label>
+        </section>
 
-        <fieldset className="roles-fieldset">
-          <legend><span className="section-number">02</span><strong>Quali musicisti servono?</strong><small>Ogni quantità crea un posto distinto.</small></legend>
-          <div className="role-editor">
-            {roles.map((role) => <div className="role-row" key={role.instrument}>
+        <section className="form-section"><h2>Formazione</h2><fieldset className="roles-fieldset"><legend className="sr-only">Formazione richiesta</legend>
+          <motion.div className="role-editor" layout>
+            <AnimatePresence initial={false}>{roles.map((role) => <motion.div className="role-row" key={role.instrument} layout initial={reduceMotion ? false : { x: 12, scale: 0.98 }} animate={{ x: 0, scale: 1 }} exit={reduceMotion ? undefined : { x: -16, scale: 0.97 }} transition={{ type: 'spring', stiffness: 440, damping: 35 }}>
               <strong>{role.instrument}</strong>
-              <div className="quantity-control"><button type="button" onClick={() => updateQuantity(role.instrument, -1)} disabled={role.quantity === 1} aria-label={`Riduci ${role.instrument}`}><Minus size={17} /></button><span>{role.quantity}</span><button type="button" onClick={() => updateQuantity(role.instrument, 1)} aria-label={`Aumenta ${role.instrument}`}><Plus size={17} /></button></div>
-              <button className="trash-button" type="button" onClick={() => setRoles((current) => current.filter((item) => item.instrument !== role.instrument))} aria-label={`Rimuovi ${role.instrument}`}><Trash2 size={18} /></button>
-            </div>)}
-          </div>
+              <div className="quantity-control"><motion.button whileTap={reduceMotion ? undefined : { scale: 0.86 }} type="button" onClick={() => updateQuantity(role.instrument, -1)} disabled={role.quantity === 1} aria-label={`Riduci ${role.instrument}`}><Minus size={17} /></motion.button><motion.span key={role.quantity} initial={reduceMotion ? false : { scale: 0.72 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 520, damping: 28 }}>{role.quantity}</motion.span><motion.button whileTap={reduceMotion ? undefined : { scale: 0.86 }} type="button" onClick={() => updateQuantity(role.instrument, 1)} aria-label={`Aumenta ${role.instrument}`}><Plus size={17} /></motion.button></div>
+              <motion.button whileTap={reduceMotion ? undefined : { scale: 0.86 }} className="trash-button" type="button" onClick={() => setRoles((current) => current.filter((item) => item.instrument !== role.instrument))} aria-label={`Rimuovi ${role.instrument}`}><Trash2 size={18} /></motion.button>
+            </motion.div>)}</AnimatePresence>
+          </motion.div>
           <div className="add-role-row">
             <label><span className="sr-only">Altro strumento</span><input list="instruments" value={newRole} onChange={(event) => setNewRole(event.target.value)} /></label>
             <datalist id="instruments">{INSTRUMENTS.map((instrument) => <option key={instrument} value={instrument} />)}</datalist>
             <button type="button" className="secondary-button" onClick={addRole}><Plus size={18} /> Aggiungi ruolo</button>
           </div>
-        </fieldset>
+        </fieldset></section>
         <button className="primary-button full-button" type="submit" disabled={!roles.length}>Pubblica proposta</button>
       </form>
     </main>

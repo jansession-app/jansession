@@ -28,3 +28,15 @@ export function formatJamDate(startsAt: string, withTime = false) {
     ? { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }
     : { day: 'numeric', month: 'long' }).format(date)
 }
+
+export function formatCompactJamDate(startsAt: string) {
+  const formatted = new Intl.DateTimeFormat('it-IT', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(startsAt)).replaceAll('.', '')
+
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1).replace(/,\s*/, ' · ')
+}

@@ -1,11 +1,11 @@
 import { Trash2 } from 'lucide-react'
+import { motion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { ConfirmSheet } from '../components/ConfirmSheet'
 import { useData } from '../data/DataContext'
 import { canDeleteJam } from '../data/jamDeletion'
 import { JamOverviewLink } from '../components/JamOverviewLink'
-
-export const DELETE_JAM_CONFIRMATION = 'Eliminare definitivamente questa jam?\n\nVerranno eliminati anche brani, scaletta, assegnazioni e dati collegati.'
 
 export function JamSettingsPage() {
   const { jamId = '' } = useParams()
@@ -19,6 +19,7 @@ export function JamSettingsPage() {
   const [assignmentsOpen, setAssignmentsOpen] = useState(jam?.assignmentsOpen ?? true)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState('')
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false)
   if (!jam) return null
   const owner = canDeleteJam(jam, data.currentUserId)
   const submit = (event: FormEvent) => {
@@ -27,7 +28,6 @@ export function JamSettingsPage() {
     navigate(`/jam/${jamId}/musicians`)
   }
   const removeJam = async () => {
-    if (!window.confirm(DELETE_JAM_CONFIRMATION)) return
     setDeleting(true)
     setDeleteError('')
     const deleted = await actions.deleteJam(jamId)
@@ -38,18 +38,21 @@ export function JamSettingsPage() {
     }
     setDeleteError('Non è stato possibile eliminare la jam. Riprova.')
   }
-  return <main className="page form-page app-screen"><JamOverviewLink jamId={jamId} jamName={jam.name} /><header><p className="eyebrow">Organizzazione</p><h1>Gestisci la jam</h1><p>Modifica i dettagli e decidi quando i musicisti possono proporre o assegnarsi.</p></header><form onSubmit={submit}>
-    <label className="field"><span>Nome</span><input required value={name} onChange={(event) => setName(event.target.value)} /></label>
-    <label className="field"><span>Data e ora</span><input required type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
-    <label className="field"><span>Luogo</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label>
-    <fieldset className="switch-list"><legend>Permessi della jam</legend><label><span><strong>Proposte brani</strong><small>I musicisti possono pubblicare e modificare proposte.</small></span><input type="checkbox" checked={proposalsOpen} onChange={(event) => setProposalsOpen(event.target.checked)} /></label><label><span><strong>Assegnazioni</strong><small>I musicisti possono occupare autonomamente i ruoli.</small></span><input type="checkbox" checked={assignmentsOpen} onChange={(event) => setAssignmentsOpen(event.target.checked)} /></label></fieldset>
-    <button className="primary-button full-button">Salva modifiche</button>
-  </form>
-  {owner && <section className="jam-delete-section">
-    <h2>Impostazioni jam</h2>
-    <p>Eliminando la jam verranno rimossi anche brani, scaletta, assegnazioni e tutti i dati collegati.</p>
-    <button className="delete-jam-action" type="button" disabled={deleting} onClick={() => { void removeJam() }}><Trash2 size={16} /> {deleting ? 'Eliminazione…' : 'Elimina jam'}</button>
-    {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
-  </section>}
+  return <main className="page form-page settings-page app-screen">
+    <motion.header className="jam-section-header" layoutId={`jam-section-${jamId}-settings`} transition={{ type: 'spring', stiffness: 370, damping: 34 }}><JamOverviewLink jamId={jamId} jamName={jam.name} /><h1>Impostazioni</h1></motion.header>
+    <form className="settings-form" onSubmit={submit}>
+      <section className="form-section"><h2>Dettagli</h2>
+        <label className="field"><span>Nome</span><input required value={name} onChange={(event) => setName(event.target.value)} /></label>
+        <label className="field"><span>Data e ora</span><input required type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
+        <label className="field"><span>Luogo</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label>
+      </section>
+      <section className="form-section"><h2>Permessi</h2><fieldset className="switch-list"><legend className="sr-only">Permessi della jam</legend>
+        <label className="setting-toggle"><strong>Proposte brani</strong><span className="toggle-control"><input type="checkbox" checked={proposalsOpen} onChange={(event) => setProposalsOpen(event.target.checked)} /><span aria-hidden="true" /></span></label>
+        <label className="setting-toggle"><strong>Assegnazioni</strong><span className="toggle-control"><input type="checkbox" checked={assignmentsOpen} onChange={(event) => setAssignmentsOpen(event.target.checked)} /><span aria-hidden="true" /></span></label>
+      </fieldset></section>
+      <button className="primary-button full-button">Salva modifiche</button>
+    </form>
+    {owner && <section className="jam-delete-section"><button className="delete-jam-action" type="button" disabled={deleting} onClick={() => setDeleteSheetOpen(true)}><Trash2 size={16} /> Elimina jam</button></section>}
+    <ConfirmSheet open={deleteSheetOpen} title="Eliminare definitivamente questa jam?" description={<><p>Verranno eliminati brani, scaletta, assegnazioni e dati collegati.</p>{deleteError && <p className="form-error" role="alert">{deleteError}</p>}</>} confirmLabel="Elimina jam" danger pending={deleting} onClose={() => { setDeleteSheetOpen(false); setDeleteError('') }} onConfirm={() => { void removeJam() }} />
   </main>
 }
