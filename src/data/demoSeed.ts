@@ -70,12 +70,12 @@ export function createDemoData(): AppData {
     jams: [
       {
         id: jamId, name: 'Jam Session Poggiardo', startsAt: '2026-08-22T20:30:00+02:00',
-        location: 'Sala prove Officine, Poggiardo', creatorId: 'gian', visibility: 'link',
+        location: 'Casa Giovanni', locationAddress: 'Via delle Rose 14, Poggiardo LE', creatorId: 'gian', visibility: 'link',
         proposalsOpen: true, assignmentsOpen: true, inviteCode: 'X7KD92', createdAt: now,
       },
       {
         id: 'jam-blues-lecce', name: 'Jam Blues Lecce', startsAt: '2026-08-30T21:00:00+02:00',
-        location: 'Lecce', creatorId: 'gian', visibility: 'private', proposalsOpen: true,
+        location: 'Bar Sport Avigliano', creatorId: 'gian', visibility: 'private', proposalsOpen: true,
         assignmentsOpen: true, inviteCode: 'BLUES30', createdAt: now,
       },
     ],

@@ -706,6 +706,13 @@ body {
 .jam-overview-header h1 { max-width: 620px; margin-bottom: 18px; font-size: clamp(2.65rem, 12vw, 5rem); line-height: .96; letter-spacing: -.06em; }
 .jam-overview-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 14px; }
 .jam-overview-date, .jam-overview-location { font-size: 11px; font-weight: 620; text-transform: none; }
+.jam-overview-location { flex: 1 1 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px; }
+.jam-overview-location > svg { align-self: start; margin-top: 2px; color: var(--ink-soft); }
+.jam-location-copy { min-width: 0; display: grid; gap: 2px; }
+.jam-location-copy strong { color: var(--ink); font-size: 12px; font-weight: 720; line-height: 1.35; }
+.jam-location-copy small { color: var(--ink-soft); font-size: 10px; font-weight: 520; line-height: 1.4; }
+.location-directions-action { min-height: 34px; padding: 0 7px; display: inline-flex; align-items: center; gap: 5px; border: 0; border-radius: 12px; background: transparent; color: var(--color-accent-strong); font-size: 10px; font-weight: 700; cursor: pointer; }
+.location-directions-action:hover { background: rgb(235 232 224 / .68); }
 .jam-role-label {
   min-height: auto;
   padding: 0 0 0 14px;
@@ -998,6 +1005,9 @@ body {
 .member-sheet-actions > button { min-height: 50px; padding: 0 5px; display: flex; align-items: center; gap: 10px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 12px; font-weight: 680; text-align: left; cursor: pointer; }
 .member-sheet-actions > button:hover { background: rgb(255 255 255 / .42); }
 .member-sheet-actions > button.danger { color: var(--color-danger); }
+.map-sheet-actions { display: grid; gap: 4px; }
+.map-sheet-actions a { min-height: 52px; padding: 0 5px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-radius: 12px; color: var(--ink); font-size: 12px; font-weight: 680; }
+.map-sheet-actions a:hover { background: rgb(255 255 255 / .42); }
 
 .settings-form { gap: 0 !important; }
 .switch-list { margin: 0; gap: 0; border-top: 1px solid var(--line); }

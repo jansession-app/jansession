@@ -15,6 +15,7 @@ interface NewJamInput {
   name: string
   startsAt: string
   location?: string
+  locationAddress?: string
   visibility: 'private' | 'link'
 }
 
@@ -40,7 +41,7 @@ interface DataActions {
   removeFromSetlist: (songId: string) => void
   moveSetlist: (songId: string, direction: -1 | 1) => void
   updateProfile: (displayName: string, instruments: string[]) => void
-  updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
+  updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
   deleteJam: (jamId: string) => Promise<boolean>
   updateMemberRole: (jamId: string, userId: string, role: JamRole) => Promise<boolean>
   leaveJam: (jamId: string) => Promise<boolean>

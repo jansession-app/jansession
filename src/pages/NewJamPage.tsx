@@ -12,11 +12,12 @@ export function NewJamPage() {
   const [name, setName] = useState('')
   const [startsAt, setStartsAt] = useState('2026-08-22T20:30')
   const [location, setLocation] = useState('')
+  const [locationAddress, setLocationAddress] = useState('')
   const [visibility, setVisibility] = useState<'private' | 'link'>('link')
   const reduceMotion = useReducedMotion()
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    const id = actions.addJam({ name: name.trim(), startsAt: new Date(startsAt).toISOString(), location: location.trim() || undefined, visibility })
+    const id = actions.addJam({ name: name.trim(), startsAt: new Date(startsAt).toISOString(), location: location.trim() || undefined, locationAddress: locationAddress.trim() || undefined, visibility })
     navigate(jamRoutes(id).overview)
   }
   return (
@@ -26,7 +27,8 @@ export function NewJamPage() {
           <section className="form-section"><h2>Dettagli</h2>
             <label className="field"><span>Nome</span><input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Jam Session Poggiardo" /></label>
             <label className="field"><span>Data e ora</span><input required type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
-            <label className="field"><span>Luogo <em>opzionale</em></span><input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="Sala prove, città…" /></label>
+            <label className="field"><span>Luogo <em>opzionale</em></span><input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="es. Casa Giovanni" /></label>
+            <label className="field"><span>Indirizzo <em>opzionale</em></span><input value={locationAddress} onChange={(event) => setLocationAddress(event.target.value)} placeholder="es. Via Roma 24, Poggiardo" autoComplete="street-address" /></label>
           </section>
           <section className="form-section"><h2>Accesso</h2><fieldset className="visibility-field"><legend className="sr-only">Accesso</legend>
             <motion.button whileTap={reduceMotion ? undefined : { scale: 0.97 }} type="button" className={visibility === 'private' ? 'active' : ''} onClick={() => setVisibility('private')}><Lock size={19} /><span><strong>Privata</strong><small>Solo membri aggiunti</small></span></motion.button>

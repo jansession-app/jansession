@@ -19,6 +19,7 @@ export interface Jam {
   name: string
   startsAt: string
   location?: string
+  locationAddress?: string
   creatorId: string
   visibility: JamVisibility
   proposalsOpen: boolean

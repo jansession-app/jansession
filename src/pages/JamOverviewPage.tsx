@@ -1,8 +1,11 @@
-import { ChevronRight, ListMusic, MapPin, Music2, Settings2, UsersRound, type LucideIcon } from 'lucide-react'
+import { ChevronRight, ExternalLink, ListMusic, MapPin, Music2, Navigation, Settings2, UsersRound, type LucideIcon } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { BottomSheet } from '../components/BottomSheet'
 import { useData } from '../data/DataContext'
 import { formatCompactJamDate, jamSongs } from '../data/selectors'
+import { jamLocationDetails } from '../domain/jamLocation'
 import type { JamRole } from '../domain/types'
 import { jamRoutes } from '../navigation'
 
@@ -18,6 +21,7 @@ export function JamOverviewPage() {
   const { jamId = '' } = useParams()
   const { data } = useData()
   const reduceMotion = useReducedMotion()
+  const [directionsOpen, setDirectionsOpen] = useState(false)
   const jam = data.jams.find((item) => item.id === jamId)
   if (!jam) return null
 
@@ -27,6 +31,7 @@ export function JamOverviewPage() {
   const setlistCount = data.setlist.filter((item) => item.jamId === jamId).length
   const participantCount = data.members.filter((member) => member.jamId === jamId).length
   const role = data.members.find((member) => member.jamId === jamId && member.userId === data.currentUserId)?.role
+  const location = jamLocationDetails(jam)
   const sections: { key: string; label: string; metric?: number; summary?: string; to: string; icon: LucideIcon; kind: string }[] = [
     { key: 'songs', label: 'Brani', metric: songs.length, summary: playableCount ? `${playableCount} suonabili` : undefined, to: routes.songs, icon: Music2, kind: 'feature' },
     { key: 'setlist', label: 'Scaletta', metric: setlistCount, summary: 'in scaletta', to: routes.setlist, icon: ListMusic, kind: 'compact' },
@@ -40,8 +45,8 @@ export function JamOverviewPage() {
         <motion.h1 layoutId={`jam-title-${jam.id}`}>{jam.name}</motion.h1>
         <div className="jam-overview-meta">
           <p className="jam-overview-date">{formatCompactJamDate(jam.startsAt)}</p>
-          {jam.location && <p className="jam-overview-location"><MapPin size={16} aria-hidden="true" /> {jam.location}</p>}
           {role && <span className="jam-role-label">{ROLE_LABELS[role]}</span>}
+          {(location.name || location.address) && <div className="jam-overview-location"><MapPin size={16} aria-hidden="true" /><span className="jam-location-copy">{location.name && <strong>{location.name}</strong>}{location.address && <small>{location.address}</small>}</span>{location.mapLinks && <motion.button type="button" className="location-directions-action" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => setDirectionsOpen(true)}><Navigation size={15} aria-hidden="true" /> Indicazioni</motion.button>}</div>}
         </div>
       </motion.header>
 
@@ -64,6 +69,9 @@ export function JamOverviewPage() {
           )
         })}
       </nav>
+      <BottomSheet open={directionsOpen && Boolean(location.mapLinks)} title="Indicazioni" onClose={() => setDirectionsOpen(false)}>
+        {location.mapLinks && <div className="map-sheet-actions"><a href={location.mapLinks.appleMaps} target="_blank" rel="noreferrer">Apri in Mappe <ExternalLink size={17} aria-hidden="true" /></a><a href={location.mapLinks.googleMaps} target="_blank" rel="noreferrer">Apri in Google Maps <ExternalLink size={17} aria-hidden="true" /></a></div>}
+      </BottomSheet>
     </main>
   )
 }
