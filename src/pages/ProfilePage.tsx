@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { useData } from '../data/DataContext'
 import { INSTRUMENTS } from '../domain/types'
 import { supabase } from '../lib/supabase'
-import { PARTNER_CREDIT, STORAGE_KEYS } from '../config/brand'
+import { PARTNER_CREDIT } from '../config/brand'
 import { getPasswordUpdateErrorMessage } from '../auth/authErrors'
+import { takeAfterOnboardingRoute } from '../invites/inviteFlow'
 
 const MIN_PASSWORD_LENGTH = 6
 
@@ -24,8 +25,7 @@ export function ProfilePage() {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     actions.updateProfile(name.trim(), instruments)
-    const destination = window.localStorage.getItem(STORAGE_KEYS.afterOnboarding) ?? '/home'
-    window.localStorage.removeItem(STORAGE_KEYS.afterOnboarding)
+    const destination = takeAfterOnboardingRoute(window.localStorage)
     navigate(destination)
   }
   const savePassword = async (event: FormEvent) => {

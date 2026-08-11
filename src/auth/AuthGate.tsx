@@ -3,8 +3,8 @@ import { Lock, LogIn, Mail, UserPlus } from 'lucide-react'
 import { createContext, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { PRODUCT_NAME } from '../domain/types'
-import { STORAGE_KEYS } from '../config/brand'
 import { getAuthErrorMessage } from './authErrors'
+import { preservePendingInviteRoute, takePendingRoute } from '../invites/inviteFlow'
 
 interface AuthState { user: User | null; isDemo: boolean }
 const AuthContext = createContext<AuthState>({ user: null, isDemo: true })
@@ -17,7 +17,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!supabase) return
-    if (window.location.hash.startsWith('#/join/')) window.localStorage.setItem(STORAGE_KEYS.pendingRoute, window.location.hash)
+    preservePendingInviteRoute(window.location.hash, window.localStorage)
     void supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null)
       setChecking(false)
@@ -38,9 +38,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
 }
 
 function restorePendingRoute() {
-  const route = window.localStorage.getItem(STORAGE_KEYS.pendingRoute)
+  const route = takePendingRoute(window.localStorage)
   if (!route) return
-  window.localStorage.removeItem(STORAGE_KEYS.pendingRoute)
   window.location.hash = route
 }
 

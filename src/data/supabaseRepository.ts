@@ -1,9 +1,10 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { AppData, Jam, JamMember, Preparation, Profile, RoleSlot, SetlistItem, Song } from '../domain/types'
 import { supabase } from '../lib/supabase'
+import { readInviteToken, type InviteTokenRelation } from '../invites/inviteFlow'
 
 type ProfileRow = { id: string; display_name: string | null; onboarding_completed: boolean; profile_instruments: { instruments: { name: string } | null }[] }
-type JamRow = { id: string; name: string; starts_at: string; location: string | null; creator_id: string; visibility: Jam['visibility']; proposals_open: boolean; assignments_open: boolean; created_at: string; jam_invites: { token: string }[] }
+type JamRow = { id: string; name: string; starts_at: string; location: string | null; creator_id: string; visibility: Jam['visibility']; proposals_open: boolean; assignments_open: boolean; created_at: string; jam_invites: InviteTokenRelation }
 type MemberRow = { jam_id: string; user_id: string; role: JamMember['role']; joined_at: string }
 type SongRow = { id: string; jam_id: string; proposer_id: string; title: string; artist: string; listening_url: string | null; bpm: number | null; musical_key: string | null; notes: string | null; created_at: string; updated_at: string }
 type SlotRow = { id: string; song_id: string; instrument_id: string; position: number; instruments: { name: string } | null }
@@ -40,7 +41,7 @@ export async function loadSupabaseData(currentUserId: string): Promise<AppData> 
   const jams: Jam[] = (jamsResult.data as unknown as JamRow[]).map((row) => ({
     id: row.id, name: row.name, startsAt: row.starts_at, location: row.location ?? undefined,
     creatorId: row.creator_id, visibility: row.visibility, proposalsOpen: row.proposals_open,
-    assignmentsOpen: row.assignments_open, inviteCode: row.jam_invites[0]?.token ?? '', createdAt: row.created_at,
+    assignmentsOpen: row.assignments_open, inviteCode: readInviteToken(row.jam_invites), createdAt: row.created_at,
   }))
   const members: JamMember[] = (membersResult.data as MemberRow[]).map((row) => ({ jamId: row.jam_id, userId: row.user_id, role: row.role, joinedAt: row.joined_at }))
   const songs: Song[] = (songsResult.data as SongRow[]).map((row) => ({ id: row.id, jamId: row.jam_id, proposerId: row.proposer_id, title: row.title, artist: row.artist, listeningUrl: row.listening_url ?? undefined, bpm: row.bpm ?? undefined, musicalKey: row.musical_key ?? undefined, notes: row.notes ?? undefined, createdAt: row.created_at, updatedAt: row.updated_at }))
@@ -121,8 +122,13 @@ export const remoteMutations = {
     if (slotError) throw slotError
   },
   async addJam(jam: Jam) {
-    const { error } = await requireClient().from('jams').insert({ id: jam.id, name: jam.name, starts_at: jam.startsAt, location: jam.location ?? null, creator_id: jam.creatorId, visibility: jam.visibility, proposals_open: true, assignments_open: true })
+    const client = requireClient()
+    const { error } = await client.from('jams').insert({ id: jam.id, name: jam.name, starts_at: jam.startsAt, location: jam.location ?? null, creator_id: jam.creatorId, visibility: jam.visibility, proposals_open: true, assignments_open: true })
     if (error) throw error
+    if (jam.visibility !== 'link') return ''
+    const { data, error: inviteError } = await client.from('jam_invites').select('token').eq('jam_id', jam.id).single()
+    if (inviteError) throw inviteError
+    return data.token
   },
   async acceptInvite(token: string) {
     const { data, error } = await requireClient().rpc('accept_jam_invite', { invite_token: token })

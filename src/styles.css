@@ -216,6 +216,7 @@ button:not(:disabled):active, a:active { opacity: .78; transform: translateY(1px
 .invite-card h2 { margin-bottom: 3px; font-size: 13px; }
 .invite-card p { margin: 0; color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
 .invite-card button { grid-column: 1 / -1; min-height: 38px; font-size: 11px; }
+.invite-card .invite-error { grid-column: 1 / -1; color: #743d38; }
 .management-card { margin-bottom: 16px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--line); border-radius: 9px; background: transparent; }
 .management-card > div { display: flex; align-items: center; gap: 9px; }
 .management-card span, .management-card strong, .management-card small { display: block; }

@@ -3,21 +3,32 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useData } from '../data/DataContext'
 import { formatJamDate, isManager } from '../data/selectors'
+import { buildInviteUrl } from '../invites/inviteFlow'
 
 export function MusiciansPage() {
   const { jamId = '' } = useParams()
   const { data, actions } = useData()
   const [copied, setCopied] = useState(false)
+  const [inviteError, setInviteError] = useState('')
   const jam = data.jams.find((item) => item.id === jamId)
   if (!jam) return null
   const members = data.members.filter((member) => member.jamId === jamId)
   const manager = isManager(data, jamId)
   const organizer = members.find((member) => member.userId === data.currentUserId)?.role === 'organizer'
-  const inviteUrl = `${window.location.origin}${window.location.pathname}#/join/${jam.inviteCode}`
+  const inviteUrl = buildInviteUrl(window.location.origin, window.location.pathname, jam.inviteCode)
   const copyInvite = async () => {
-    await navigator.clipboard.writeText(inviteUrl)
-    setCopied(true)
-    window.setTimeout(() => setCopied(false), 1600)
+    if (!inviteUrl) {
+      setInviteError('Link di invito non disponibile. Riprova tra poco.')
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      setInviteError('')
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      setInviteError('Non è stato possibile copiare il link. Riprova.')
+    }
   }
 
   return (
@@ -32,6 +43,7 @@ export function MusiciansPage() {
         <span className="invite-icon"><Share2 size={22} /></span>
         <div><h2>Invita alla jam</h2><p>Condividi il link su WhatsApp. Chi lo apre potrà entrare in autonomia.</p></div>
         <button className="secondary-button" onClick={copyInvite}>{copied ? <Check size={18} /> : <Copy size={18} />} {copied ? 'Copiato' : 'Copia link'}</button>
+        {inviteError && <p className="form-error invite-error" role="alert">{inviteError}</p>}
       </section>}
 
       {manager && <section className="management-card"><div><Settings2 size={20} /><span><strong>Gestione jam</strong><small>Proposte {jam.proposalsOpen ? 'aperte' : 'chiuse'} · assegnazioni {jam.assignmentsOpen ? 'aperte' : 'chiuse'}</small></span></div><Link className="secondary-button" to={`/jam/${jamId}/settings`}>Modifica</Link></section>}

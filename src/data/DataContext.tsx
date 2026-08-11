@@ -94,9 +94,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [isDemo, user])
 
   const update = useCallback((recipe: (current: AppData) => AppData) => setData((current) => recipe(current)), [])
-  const runRemote = useCallback((makeWork: () => Promise<unknown>) => {
+  const runRemote = useCallback(<Result,>(makeWork: () => Promise<Result>, onSuccess?: (result: Result) => void) => {
     if (isDemo) return
-    void makeWork().catch((error: unknown) => {
+    void makeWork().then((result) => onSuccess?.(result)).catch((error: unknown) => {
       reportDataError('Modifica Supabase non salvata', error)
       setSyncError('Modifica non salvata.')
     })
@@ -163,9 +163,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addJam(input) {
       const jamId = id('jam')
       const timestamp = new Date().toISOString()
-      const createdJam: Jam = { id: jamId, ...input, creatorId: data.currentUserId, proposalsOpen: true, assignmentsOpen: true, inviteCode: Math.random().toString(36).slice(2, 8).toUpperCase(), createdAt: timestamp }
+      const createdJam: Jam = { id: jamId, ...input, creatorId: data.currentUserId, proposalsOpen: true, assignmentsOpen: true, inviteCode: isDemo ? Math.random().toString(36).slice(2, 8).toUpperCase() : '', createdAt: timestamp }
       update((current) => ({ ...current, jams: [...current.jams, createdJam], members: [...current.members, { jamId, userId: current.currentUserId, role: 'organizer', joinedAt: timestamp }] }))
-      runRemote(() => remoteMutations.addJam(createdJam))
+      runRemote(() => remoteMutations.addJam(createdJam), (inviteCode) => {
+        if (!inviteCode) return
+        update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, inviteCode } : jam) }))
+      })
       return jamId
     },
     acceptInvite(inviteCode) {

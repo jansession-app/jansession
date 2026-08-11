@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { Link, Navigate, Outlet, useLocation, useParams } from 'react-router-dom'
 import { STORAGE_KEYS } from '../config/brand'
 import { useData } from '../data/DataContext'
+import { preserveAfterOnboardingRoute } from '../invites/inviteFlow'
 
 export function RootShell() {
   const { data, mode, loading, syncError } = useData()
@@ -24,7 +25,7 @@ export function RootShell() {
   if (loading) return <div className="auth-loading"><span>Caricamento…</span></div>
   const profile = mode === 'supabase' ? data.profiles.find((item) => item.id === data.currentUserId) : null
   if (mode === 'supabase' && profile && !profile.onboarded && location.pathname !== '/profile') {
-    window.localStorage.setItem(STORAGE_KEYS.afterOnboarding, location.pathname)
+    preserveAfterOnboardingRoute(location.pathname, window.localStorage)
     return <Navigate to="/profile" replace />
   }
   const showNavigation = !location.pathname.startsWith('/join/')
