@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { formatCompactJamDate } from '../data/selectors'
 
 describe('localized jam dates', () => {
-  const date = '2026-08-22T20:30:00+02:00'
+  const date = new Date(2026, 7, 22, 20, 30).toISOString()
 
   it('formats compact dates in Italian', () => {
     expect(formatCompactJamDate(date, 'it')).toBe('Sab 22 ago · 20:30')
