@@ -7,6 +7,7 @@ import { loadSupabaseData, remoteMutations, subscribeToCollaborativeChanges } fr
 import { reportDataError } from './errors'
 import { STORAGE_KEYS } from '../config/brand'
 import { canDeleteJam, removeJamFromData } from './jamDeletion'
+import { canChangeJamMemberRole, canLeaveJam, canRemoveJamMember, changeJamMemberRoleInData, removeJamMemberFromData } from './jamMembership'
 
 const STORAGE_KEY = STORAGE_KEYS.demo
 
@@ -41,8 +42,9 @@ interface DataActions {
   updateProfile: (displayName: string, instruments: string[]) => void
   updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
   deleteJam: (jamId: string) => Promise<boolean>
-  updateMemberRole: (jamId: string, userId: string, role: JamRole) => void
-  removeMember: (jamId: string, userId: string) => void
+  updateMemberRole: (jamId: string, userId: string, role: JamRole) => Promise<boolean>
+  leaveJam: (jamId: string) => Promise<boolean>
+  removeMember: (jamId: string, userId: string) => Promise<boolean>
   removeSong: (songId: string) => void
   updateSong: (songId: string, changes: Pick<Song, 'title' | 'artist' | 'listeningUrl'>) => void
   resetDemo: () => void
@@ -103,6 +105,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setSyncError('Modifica non salvata.')
     })
   }, [isDemo])
+  const removeMembership = useCallback(async (jamId: string, userId: string) => {
+    setSyncError('')
+    try {
+      if (!isDemo) await remoteMutations.removeJamParticipant(jamId, userId)
+      update((current) => removeJamMemberFromData(current, jamId, userId))
+      if (userId === data.currentUserId && window.localStorage.getItem(STORAGE_KEYS.activeJam) === jamId) {
+        window.localStorage.removeItem(STORAGE_KEYS.activeJam)
+      }
+      return true
+    } catch (error: unknown) {
+      reportDataError('Aggiornamento partecipanti Supabase non riuscito', error)
+      setSyncError('Non è stato possibile aggiornare i partecipanti. Riprova.')
+      return false
+    }
+  }, [data.currentUserId, isDemo, update])
 
   const actions = useMemo<DataActions>(() => ({
     setPreparation(songId, state) {
@@ -237,17 +254,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return false
       }
     },
-    updateMemberRole(jamId, userId, role) {
-      runRemote(() => remoteMutations.updateMemberRole(jamId, userId, role))
-      update((current) => ({ ...current, members: current.members.map((member) => member.jamId === jamId && member.userId === userId ? { ...member, role } : member) }))
+    async updateMemberRole(jamId, userId, role) {
+      if (!canChangeJamMemberRole(data, jamId, data.currentUserId, userId, role)) {
+        setSyncError('Solo il proprietario può modificare il ruolo di un partecipante.')
+        return false
+      }
+      setSyncError('')
+      try {
+        if (!isDemo) await remoteMutations.updateMemberRole(jamId, userId, role)
+        update((current) => changeJamMemberRoleInData(current, jamId, userId, role))
+        return true
+      } catch (error: unknown) {
+        reportDataError('Modifica ruolo Supabase non riuscita', error)
+        setSyncError('Non è stato possibile modificare il ruolo. Riprova.')
+        return false
+      }
     },
-    removeMember(jamId, userId) {
-      runRemote(() => remoteMutations.removeMember(jamId, userId))
-      update((current) => ({
-        ...current,
-        members: current.members.filter((member) => !(member.jamId === jamId && member.userId === userId)),
-        assignments: current.assignments.filter((assignment) => assignment.userId !== userId || !current.slots.some((slot) => slot.id === assignment.slotId && current.songs.some((song) => song.id === slot.songId && song.jamId === jamId))),
-      }))
+    async leaveJam(jamId) {
+      if (!canLeaveJam(data, jamId)) {
+        setSyncError('Il proprietario non può abbandonare la propria jam.')
+        return false
+      }
+      return removeMembership(jamId, data.currentUserId)
+    },
+    async removeMember(jamId, userId) {
+      if (!canRemoveJamMember(data, jamId, data.currentUserId, userId)) {
+        setSyncError('Solo il proprietario può rimuovere un altro partecipante.')
+        return false
+      }
+      return removeMembership(jamId, userId)
     },
     removeSong(songId) {
       runRemote(() => remoteMutations.removeSong(songId))
@@ -271,7 +306,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     resetDemo() {
       if (isDemo) setData(createDemoData())
     },
-  }), [data.assignments, data.currentUserId, data.jams, data.preparations, data.setlist, data.slots, data.volunteers, isDemo, runRemote, update])
+  }), [data, isDemo, removeMembership, runRemote, update])
 
   return <DataContext.Provider value={{ data, actions, mode: isDemo ? 'demo' : 'supabase', loading, syncError }}>{children}</DataContext.Provider>
 }

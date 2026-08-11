@@ -163,11 +163,12 @@ export const remoteMutations = {
     if (count !== 1) throw new Error('La cancellazione non ha interessato alcuna jam.')
   },
   async updateMemberRole(jamId: string, userId: string, role: JamMember['role']) {
-    const { error } = await requireClient().from('jam_members').update({ role }).eq('jam_id', jamId).eq('user_id', userId)
+    const { error, count } = await requireClient().from('jam_members').update({ role }, { count: 'exact' }).eq('jam_id', jamId).eq('user_id', userId)
     if (error) throw error
+    if (count !== 1) throw new Error('Il ruolo del partecipante non è stato aggiornato.')
   },
-  async removeMember(jamId: string, userId: string) {
-    const { error } = await requireClient().from('jam_members').delete().eq('jam_id', jamId).eq('user_id', userId)
+  async removeJamParticipant(jamId: string, userId: string) {
+    const { error } = await requireClient().rpc('remove_jam_participant', { target_jam_id: jamId, target_user_id: userId })
     if (error) throw error
   },
   async removeSong(songId: string) {

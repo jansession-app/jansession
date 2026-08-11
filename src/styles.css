@@ -230,13 +230,21 @@ button:not(:disabled):active, a:active { opacity: .78; transform: translateY(1px
 .musician-card h3 em { margin-left: 5px; color: var(--ink-soft); font-size: 8px; font-style: normal; text-transform: uppercase; }
 .musician-card p { margin: 0; color: var(--ink-soft); font-size: 10px; }
 .role-badge { grid-column: 2; width: fit-content; display: flex; align-items: center; gap: 4px; color: var(--ink-soft); font-size: 8px; font-weight: 650; }
-.member-controls { grid-column: 2; display: flex; gap: 5px; }
-.member-controls select { min-height: 33px; padding: 0 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); font-size: 9px; }
-.member-controls button { width: 33px; height: 33px; display: grid; place-items: center; border: 1px solid #ddc2be; border-radius: 6px; background: transparent; color: var(--incomplete); cursor: pointer; }
+.member-controls { grid-column: 2; display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.member-controls button { min-height: 30px; padding: 0; display: inline-flex; align-items: center; gap: 4px; border: 0; background: transparent; color: var(--ink-soft); font-size: 9px; font-weight: 650; text-align: left; cursor: pointer; }
+.member-controls button:disabled { opacity: .45; cursor: not-allowed; }
+.member-controls .remove-member-action { color: var(--incomplete); }
+.membership-error { margin-top: 12px; }
 .location-card { margin-top: 18px; padding: 12px 0; display: flex; gap: 9px; border-top: 1px solid var(--line); color: var(--ink-soft); }
 .location-card strong, .location-card span { display: block; }
 .location-card strong { margin-bottom: 3px; color: var(--ink); font-size: 11px; }
 .location-card span { font-size: 10px; }
+.leave-jam-section { margin-top: 18px; padding-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); }
+.leave-jam-section strong, .leave-jam-section span { display: block; }
+.leave-jam-section strong { margin-bottom: 3px; font-size: 11px; }
+.leave-jam-section span { color: var(--ink-soft); font-size: 9px; }
+.leave-jam-section button { min-height: 36px; padding: 0; display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--incomplete); font-size: 10px; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.leave-jam-section button:disabled { opacity: .45; cursor: not-allowed; }
 
 .workload-number { width: fit-content; margin-top: 13px; display: flex; align-items: baseline; gap: 6px; }
 .workload-number strong { font-size: 20px; }

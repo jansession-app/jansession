@@ -1,20 +1,25 @@
-import { Check, Copy, Crown, MapPin, Settings2, Share2, ShieldCheck, Trash2 } from 'lucide-react'
+import { Check, Copy, Crown, LogOut, MapPin, Settings2, Share2, ShieldCheck, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../data/DataContext'
 import { formatJamDate, isManager } from '../data/selectors'
 import { buildInviteUrl } from '../invites/inviteFlow'
+import { canLeaveJam, canRemoveJamMember } from '../data/jamMembership'
 
 export function MusiciansPage() {
   const { jamId = '' } = useParams()
   const { data, actions } = useData()
+  const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [inviteError, setInviteError] = useState('')
+  const [membershipError, setMembershipError] = useState('')
+  const [actingMemberId, setActingMemberId] = useState('')
   const jam = data.jams.find((item) => item.id === jamId)
   if (!jam) return null
   const members = data.members.filter((member) => member.jamId === jamId)
   const manager = isManager(data, jamId)
-  const organizer = members.find((member) => member.userId === data.currentUserId)?.role === 'organizer'
+  const creator = jam.creatorId === data.currentUserId
+  const canLeave = canLeaveJam(data, jamId)
   const inviteUrl = buildInviteUrl(window.location.origin, window.location.pathname, jam.inviteCode)
   const copyInvite = async () => {
     if (!inviteUrl) {
@@ -29,6 +34,33 @@ export function MusiciansPage() {
     } catch {
       setInviteError('Non è stato possibile copiare il link. Riprova.')
     }
+  }
+  const changeRole = async (userId: string, role: 'musician' | 'co-organizer') => {
+    setActingMemberId(userId)
+    setMembershipError('')
+    const updated = await actions.updateMemberRole(jamId, userId, role)
+    setActingMemberId('')
+    if (!updated) setMembershipError('Non è stato possibile modificare il ruolo. Riprova.')
+  }
+  const removeMember = async (userId: string, displayName: string) => {
+    if (!window.confirm(`Rimuovere ${displayName} dalla jam?\n\nLe sue assegnazioni, disponibilità e stati di preparazione per questa jam verranno rimossi.`)) return
+    setActingMemberId(userId)
+    setMembershipError('')
+    const removed = await actions.removeMember(jamId, userId)
+    setActingMemberId('')
+    if (!removed) setMembershipError('Non è stato possibile rimuovere il partecipante. Riprova.')
+  }
+  const leaveJam = async () => {
+    if (!window.confirm('Abbandonare questa jam?\n\nLe tue assegnazioni, disponibilità e stati di preparazione per questa jam verranno rimossi.')) return
+    setActingMemberId(data.currentUserId)
+    setMembershipError('')
+    const left = await actions.leaveJam(jamId)
+    setActingMemberId('')
+    if (left) {
+      navigate('/home', { replace: true })
+      return
+    }
+    setMembershipError('Non è stato possibile abbandonare la jam. Riprova.')
   }
 
   return (
@@ -57,16 +89,19 @@ export function MusiciansPage() {
               <span className="avatar" aria-hidden="true">{profile.displayName.slice(0, 2).toUpperCase()}</span>
               <div><h3>{profile.displayName}{profile.id === data.currentUserId && <em>Tu</em>}</h3><p>{profile.instruments.join(' · ')}</p></div>
               {member.role !== 'musician' && <span className="role-badge">{member.role === 'organizer' ? <Crown size={14} /> : <ShieldCheck size={14} />}{member.role === 'organizer' ? 'Organizzatore' : 'Co-organizzatore'}</span>}
-              {member.role !== 'organizer' && (organizer || (manager && member.role === 'musician')) && <div className="member-controls">
-                {organizer && <select aria-label={`Ruolo di ${profile.displayName}`} value={member.role} onChange={(event) => actions.updateMemberRole(jamId, member.userId, event.target.value as 'musician' | 'co-organizer')}><option value="musician">Musicista</option><option value="co-organizer">Co-organizzatore</option></select>}
-                <button aria-label={`Rimuovi ${profile.displayName}`} onClick={() => { if (window.confirm(`Rimuovere ${profile.displayName} dalla jam?`)) actions.removeMember(jamId, member.userId) }}><Trash2 size={16} /></button>
+              {creator && canRemoveJamMember(data, jamId, data.currentUserId, member.userId) && <div className="member-controls">
+                <button disabled={actingMemberId === member.userId} onClick={() => { void changeRole(member.userId, member.role === 'musician' ? 'co-organizer' : 'musician') }}>{member.role === 'musician' ? 'Promuovi a co-organizzatore' : 'Rendi musicista'}</button>
+                <button className="remove-member-action" disabled={actingMemberId === member.userId} onClick={() => { void removeMember(member.userId, profile.displayName) }}><Trash2 size={14} /> Rimuovi dalla jam</button>
               </div>}
             </article>
           )
         })}
       </div>
 
+      {membershipError && <p className="form-error membership-error" role="alert">{membershipError}</p>}
+
       <section className="location-card"><MapPin size={21} /><div><strong>Dove ci troviamo</strong><span>{jam.location || 'Luogo da definire'}</span></div></section>
+      {canLeave && <section className="leave-jam-section"><div><strong>La tua partecipazione</strong><span>Uscendo verranno liberati i tuoi ruoli in questa jam.</span></div><button type="button" disabled={actingMemberId === data.currentUserId} onClick={() => { void leaveJam() }}><LogOut size={15} /> {actingMemberId === data.currentUserId ? 'Uscita…' : 'Abbandona jam'}</button></section>}
       <div className="bottom-spacer" />
     </main>
   )
