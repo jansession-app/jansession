@@ -1,6 +1,6 @@
 export const GLOBAL_NAVIGATION = [
-  { key: 'jams', label: 'Jams', to: '/jams' },
-  { key: 'profile', label: 'Profilo', to: '/profile' },
+  { key: 'jams', to: '/jams' },
+  { key: 'profile', to: '/profile' },
 ] as const
 
 export type GlobalNavigationKey = (typeof GLOBAL_NAVIGATION)[number]['key']

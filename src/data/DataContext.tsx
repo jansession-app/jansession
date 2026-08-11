@@ -8,6 +8,8 @@ import { reportDataError } from './errors'
 import { STORAGE_KEYS } from '../config/brand'
 import { canDeleteJam, removeJamFromData } from './jamDeletion'
 import { canChangeJamMemberRole, canLeaveJam, canRemoveJamMember, changeJamMemberRoleInData, removeJamMemberFromData } from './jamMembership'
+import { useI18n } from '../i18n/LanguageContext'
+import type { TranslationKey } from '../i18n/translations'
 
 const STORAGE_KEY = STORAGE_KEYS.demo
 
@@ -74,9 +76,10 @@ const id = (_prefix: string) => crypto.randomUUID()
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user, isDemo } = useAuth()
+  const { t } = useI18n()
   const [data, setData] = useState<AppData>(readInitialData)
   const [loading, setLoading] = useState(!isDemo)
-  const [syncError, setSyncError] = useState('')
+  const [syncErrorKey, setSyncErrorKey] = useState<TranslationKey | null>(null)
 
   useEffect(() => {
     if (isDemo) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
@@ -87,10 +90,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     let active = true
     const reload = () => {
       void loadSupabaseData(user.id).then((snapshot) => {
-        if (active) { setData(snapshot); setLoading(false); setSyncError('') }
+        if (active) { setData(snapshot); setLoading(false); setSyncErrorKey(null) }
       }).catch((error: unknown) => {
         reportDataError('Caricamento dati Supabase non riuscito', error)
-        if (active) { setLoading(false); setSyncError('Impossibile caricare i dati.') }
+        if (active) { setLoading(false); setSyncErrorKey('data.error.load') }
       })
     }
     reload()
@@ -103,18 +106,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     if (isDemo) return
     void makeWork().then((result) => onSuccess?.(result)).catch((error: unknown) => {
       reportDataError('Modifica Supabase non salvata', error)
-      setSyncError('Modifica non salvata.')
+      setSyncErrorKey('data.error.unsaved')
     })
   }, [isDemo])
   const removeMembership = useCallback(async (jamId: string, userId: string) => {
-    setSyncError('')
+    setSyncErrorKey(null)
     try {
       if (!isDemo) await remoteMutations.removeJamParticipant(jamId, userId)
       update((current) => removeJamMemberFromData(current, jamId, userId))
       return true
     } catch (error: unknown) {
       reportDataError('Aggiornamento partecipanti Supabase non riuscito', error)
-      setSyncError('Non è stato possibile aggiornare i partecipanti. Riprova.')
+      setSyncErrorKey('data.error.membersUpdate')
       return false
     }
   }, [isDemo, update])
@@ -235,46 +238,46 @@ export function DataProvider({ children }: { children: ReactNode }) {
     async deleteJam(jamId) {
       const jam = data.jams.find((item) => item.id === jamId)
       if (!canDeleteJam(jam, data.currentUserId)) {
-        setSyncError('Solo il proprietario può eliminare questa jam.')
+        setSyncErrorKey('data.error.ownerDeleteOnly')
         return false
       }
-      setSyncError('')
+      setSyncErrorKey(null)
       try {
         if (!isDemo) await remoteMutations.deleteJam(jamId)
         update((current) => removeJamFromData(current, jamId))
         return true
       } catch (error: unknown) {
         reportDataError('Eliminazione jam Supabase non riuscita', error)
-        setSyncError('Non è stato possibile eliminare la jam. Riprova.')
+        setSyncErrorKey('data.error.deleteJam')
         return false
       }
     },
     async updateMemberRole(jamId, userId, role) {
       if (!canChangeJamMemberRole(data, jamId, data.currentUserId, userId, role)) {
-        setSyncError('Solo il proprietario può modificare il ruolo di un partecipante.')
+        setSyncErrorKey('data.error.ownerRoleOnly')
         return false
       }
-      setSyncError('')
+      setSyncErrorKey(null)
       try {
         if (!isDemo) await remoteMutations.updateMemberRole(jamId, userId, role)
         update((current) => changeJamMemberRoleInData(current, jamId, userId, role))
         return true
       } catch (error: unknown) {
         reportDataError('Modifica ruolo Supabase non riuscita', error)
-        setSyncError('Non è stato possibile modificare il ruolo. Riprova.')
+        setSyncErrorKey('data.error.roleUpdate')
         return false
       }
     },
     async leaveJam(jamId) {
       if (!canLeaveJam(data, jamId)) {
-        setSyncError('Il proprietario non può abbandonare la propria jam.')
+        setSyncErrorKey('data.error.ownerCannotLeave')
         return false
       }
       return removeMembership(jamId, data.currentUserId)
     },
     async removeMember(jamId, userId) {
       if (!canRemoveJamMember(data, jamId, data.currentUserId, userId)) {
-        setSyncError('Solo il proprietario può rimuovere un altro partecipante.')
+        setSyncErrorKey('data.error.ownerRemoveOnly')
         return false
       }
       return removeMembership(jamId, userId)
@@ -303,7 +306,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     },
   }), [data, isDemo, removeMembership, runRemote, update])
 
-  return <DataContext.Provider value={{ data, actions, mode: isDemo ? 'demo' : 'supabase', loading, syncError }}>{children}</DataContext.Provider>
+  return <DataContext.Provider value={{ data, actions, mode: isDemo ? 'demo' : 'supabase', loading, syncError: syncErrorKey ? t(syncErrorKey) : '' }}>{children}</DataContext.Provider>
 }
 
 export function useData() {

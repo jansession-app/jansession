@@ -1,4 +1,6 @@
 import type { Assignment, Preparation, Profile, RoleSlot, SongStatus, StatusDetails } from './types'
+import type { Translate } from '../i18n/LanguageContext'
+import { INSTRUMENT_LABEL_KEYS } from './labels'
 
 const PREPARED_STATES = new Set(['KNOWS_STRUCTURE', 'READY'])
 
@@ -53,15 +55,22 @@ export function canAddToSetlist(status: SongStatus) {
   return status === 'PLAYABLE' || status === 'READY'
 }
 
-export function statusSummary(details: StatusDetails): string {
+export function displayInstrument(instrument: string, t: Translate): string {
+  const key = INSTRUMENT_LABEL_KEYS[instrument]
+  return key ? t(key) : instrument
+}
+
+export function statusSummary(details: StatusDetails, t: Translate): string {
   if (details.status === 'INCOMPLETE') {
-    const prefix = details.missingInstruments.length === 1 ? 'Manca' : 'Mancano'
-    return `${prefix}: ${details.missingInstruments.join(', ') || 'formazione'}`
+    const instruments = details.missingInstruments.length
+      ? details.missingInstruments.map((instrument) => displayInstrument(instrument, t)).join(', ')
+      : t('status.summary.missingFormation')
+    return t(details.missingInstruments.length === 1 ? 'status.summary.missingOne' : 'status.summary.missingMany', { instruments })
   }
   if (details.status === 'TO_PREPARE') {
-    if (details.musiciansToPrepare.length === 1) return `${details.musiciansToPrepare[0]} deve ancora conoscerla`
-    return `${details.musiciansToPrepare.length} musicisti devono ancora conoscerla`
+    if (details.musiciansToPrepare.length === 1) return t('status.summary.oneToPrepare', { name: details.musiciansToPrepare[0] ?? '' })
+    return t('status.summary.manyToPrepare', { count: details.musiciansToPrepare.length })
   }
-  if (details.status === 'PLAYABLE') return 'Tutta la formazione conosce la struttura'
-  return 'Tutta la formazione è pronta'
+  if (details.status === 'PLAYABLE') return t('status.summary.playable')
+  return t('status.summary.ready')
 }

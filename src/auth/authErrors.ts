@@ -1,16 +1,17 @@
 type AuthAction = 'login' | 'signup'
+import type { TranslationKey } from '../i18n/translations'
 
 interface AuthErrorLike {
   code?: string
   message?: string
 }
 
-export function getAuthErrorMessage(error: AuthErrorLike, action: AuthAction): string {
+export function getAuthErrorKey(error: AuthErrorLike, action: AuthAction): TranslationKey {
   const code = error.code?.toLowerCase() ?? ''
   const message = error.message?.toLowerCase() ?? ''
 
   if (code === 'invalid_credentials' || message.includes('invalid login credentials')) {
-    return 'Email o password non corretti.'
+    return 'auth.error.invalidCredentials'
   }
   if (
     code === 'user_already_exists'
@@ -19,22 +20,22 @@ export function getAuthErrorMessage(error: AuthErrorLike, action: AuthAction): s
     || message.includes('already registered')
     || message.includes('already exists')
   ) {
-    return 'Questa email è già registrata.'
+    return 'auth.error.emailRegistered'
   }
   if (
     code === 'weak_password'
     || message.includes('password should be at least')
     || message.includes('password must be at least')
   ) {
-    return 'La password deve contenere almeno 6 caratteri.'
+    return 'auth.error.passwordTooShort'
   }
 
   return action === 'signup'
-    ? 'Non è stato possibile creare l’account. Riprova.'
-    : 'Non è stato possibile effettuare l’accesso. Riprova.'
+    ? 'auth.error.signup'
+    : 'auth.error.login'
 }
 
-export function getPasswordUpdateErrorMessage(error: AuthErrorLike): string {
+export function getPasswordUpdateErrorKey(error: AuthErrorLike): TranslationKey {
   const code = error.code?.toLowerCase() ?? ''
   const message = error.message?.toLowerCase() ?? ''
 
@@ -43,11 +44,11 @@ export function getPasswordUpdateErrorMessage(error: AuthErrorLike): string {
     || message.includes('password should be at least')
     || message.includes('password must be at least')
   ) {
-    return 'La password non rispetta la lunghezza minima richiesta.'
+    return 'auth.error.passwordMinimum'
   }
   if (code === 'same_password' || message.includes('different from the old password')) {
-    return 'Scegli una password diversa da quella attuale.'
+    return 'auth.error.passwordSame'
   }
 
-  return 'Non è stato possibile aggiornare la password. Riprova.'
+  return 'auth.error.passwordUpdate'
 }

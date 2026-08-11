@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useId, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useI18n } from '../i18n/LanguageContext'
 
 type BottomSheetProps = {
   open: boolean
@@ -14,6 +15,7 @@ type BottomSheetProps = {
 export function BottomSheet({ open, title, onClose, children, footer }: BottomSheetProps) {
   const reduceMotion = useReducedMotion()
   const titleId = useId()
+  const { t } = useI18n()
 
   useEffect(() => {
     if (!open) return
@@ -47,7 +49,7 @@ export function BottomSheet({ open, title, onClose, children, footer }: BottomSh
           transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 38, mass: 0.82 }}
         >
           <span className="sheet-handle" aria-hidden="true" />
-          <header><h2 id={titleId}>{title}</h2><button type="button" aria-label="Chiudi" onClick={onClose}><X size={19} /></button></header>
+          <header><h2 id={titleId}>{title}</h2><button type="button" aria-label={t('common.close')} onClick={onClose}><X size={19} /></button></header>
           <div className="sheet-content">{children}</div>
           {footer && <footer>{footer}</footer>}
         </motion.section>

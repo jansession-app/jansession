@@ -6,4 +6,5 @@ export const STORAGE_KEYS = {
   demo: `${PRODUCT_SLUG}-demo-v1`,
   pendingRoute: `${PRODUCT_SLUG}-pending-route`,
   afterOnboarding: `${PRODUCT_SLUG}-after-onboarding`,
+  language: `${PRODUCT_SLUG}-language`,
 } as const

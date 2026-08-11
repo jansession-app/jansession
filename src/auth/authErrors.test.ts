@@ -1,35 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { getAuthErrorMessage, getPasswordUpdateErrorMessage } from './authErrors'
+import { getAuthErrorKey, getPasswordUpdateErrorKey } from './authErrors'
 
 describe('getAuthErrorMessage', () => {
   it('maps invalid credentials', () => {
-    expect(getAuthErrorMessage({ code: 'invalid_credentials' }, 'login')).toBe('Email o password non corretti.')
+    expect(getAuthErrorKey({ code: 'invalid_credentials' }, 'login')).toBe('auth.error.invalidCredentials')
   })
 
   it('maps an existing account', () => {
-    expect(getAuthErrorMessage({ message: 'User already registered' }, 'signup')).toBe('Questa email è già registrata.')
+    expect(getAuthErrorKey({ message: 'User already registered' }, 'signup')).toBe('auth.error.emailRegistered')
   })
 
   it('maps weak passwords', () => {
-    expect(getAuthErrorMessage({ code: 'weak_password' }, 'signup')).toBe('La password deve contenere almeno 6 caratteri.')
+    expect(getAuthErrorKey({ code: 'weak_password' }, 'signup')).toBe('auth.error.passwordTooShort')
   })
 
   it('uses action-specific generic messages', () => {
-    expect(getAuthErrorMessage({}, 'login')).toBe('Non è stato possibile effettuare l’accesso. Riprova.')
-    expect(getAuthErrorMessage({}, 'signup')).toBe('Non è stato possibile creare l’account. Riprova.')
+    expect(getAuthErrorKey({}, 'login')).toBe('auth.error.login')
+    expect(getAuthErrorKey({}, 'signup')).toBe('auth.error.signup')
   })
 })
 
 describe('getPasswordUpdateErrorMessage', () => {
   it('maps a server-side password length requirement', () => {
-    expect(getPasswordUpdateErrorMessage({ code: 'weak_password' })).toBe('La password non rispetta la lunghezza minima richiesta.')
+    expect(getPasswordUpdateErrorKey({ code: 'weak_password' })).toBe('auth.error.passwordMinimum')
   })
 
   it('maps reuse of the current password', () => {
-    expect(getPasswordUpdateErrorMessage({ code: 'same_password' })).toBe('Scegli una password diversa da quella attuale.')
+    expect(getPasswordUpdateErrorKey({ code: 'same_password' })).toBe('auth.error.passwordSame')
   })
 
   it('does not expose unknown technical errors', () => {
-    expect(getPasswordUpdateErrorMessage({ message: 'Internal auth service failure' })).toBe('Non è stato possibile aggiornare la password. Riprova.')
+    expect(getPasswordUpdateErrorKey({ message: 'Internal auth service failure' })).toBe('auth.error.passwordUpdate')
   })
 })

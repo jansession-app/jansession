@@ -812,6 +812,17 @@ body {
 .profile-session-section { margin-top: 0; padding: 22px 0; }
 .profile-session-section strong { margin: 0; }
 .profile-session-section span { display: none; }
+.profile-language-section { padding: 0; border-top: 1px solid var(--line); }
+.profile-language-row { width: 100%; min-height: 68px; padding: 0; display: grid; grid-template-columns: 28px minmax(0, 1fr) 20px; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.profile-language-row > svg:first-child { color: var(--color-accent-strong); }
+.profile-language-row strong, .profile-language-row small { display: block; }
+.profile-language-row strong { font-size: 12px; }
+.profile-language-row small { margin-top: 3px; color: var(--ink-soft); font-size: 10px; }
+.profile-language-row > svg:last-child { color: var(--color-text-tertiary); justify-self: end; }
+.language-sheet-options { display: grid; gap: 4px; }
+.language-sheet-options button { min-height: 52px; padding: 0 6px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 13px; font-weight: 680; text-align: left; cursor: pointer; }
+.language-sheet-options button:hover, .language-sheet-options button.active { background: rgb(255 255 255 / .42); }
+.language-sheet-options button svg { color: var(--color-accent-strong); }
 
 .sheet-backdrop {
   position: fixed;

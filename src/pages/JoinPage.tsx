@@ -8,6 +8,7 @@ import { PRODUCT_NAME } from '../domain/types'
 import { supabase } from '../lib/supabase'
 import { remoteMutations } from '../data/supabaseRepository'
 import { joinedJamRoute } from '../navigation'
+import { useI18n } from '../i18n/LanguageContext'
 
 interface InvitePreview { id: string; name: string; startsAt: string; location?: string }
 
@@ -18,6 +19,7 @@ export function JoinPage() {
   const reduceMotion = useReducedMotion()
   const [preview, setPreview] = useState<InvitePreview | null>(null)
   const [previewLoading, setPreviewLoading] = useState(mode === 'supabase')
+  const { language, t } = useI18n()
   const jam = data.jams.find((item) => item.inviteCode.toLowerCase() === inviteCode.toLowerCase())
   const alreadyMember = jam && data.members.some((item) => item.jamId === jam.id && item.userId === data.currentUserId)
 
@@ -32,11 +34,11 @@ export function JoinPage() {
 
   const displayJam = jam ?? preview
 
-  if (previewLoading) return <div className="auth-loading"><span>Controlliamo l’invito…</span></div>
+  if (previewLoading) return <div className="auth-loading"><span>{t('join.checking')}</span></div>
   if (!displayJam) return (
     <main className="join-page">
       <div className="join-brand"><strong>{PRODUCT_NAME}</strong></div>
-      <section className="join-panel"><span className="join-code">Invito non valido</span><h1>Jam non disponibile</h1><p>Controlla il link ricevuto.</p><button className="primary-button" onClick={() => navigate('/jams')}>Vai alle jam</button></section>
+      <section className="join-panel"><span className="join-code">{t('join.invalid')}</span><h1>{t('join.unavailable')}</h1><p>{t('join.checkLink')}</p><button className="primary-button" onClick={() => navigate('/jams')}>{t('join.goToJams')}</button></section>
     </main>
   )
 
@@ -53,10 +55,10 @@ export function JoinPage() {
     <main className="join-page">
       <div className="join-brand"><strong>{PRODUCT_NAME}</strong></div>
       <motion.section className="join-panel" initial={reduceMotion ? false : { y: 24, scale: 0.985 }} animate={{ y: 0, scale: 1 }} transition={{ type: 'spring', stiffness: 390, damping: 34 }}>
-        <span className="join-code"><Link2 size={15} /> Invito alla jam</span>
+        <span className="join-code"><Link2 size={15} /> {t('join.invitation')}</span>
         <h1>{displayJam.name}</h1>
-        <div className="join-details"><span><CalendarDays size={18} /> {formatCompactJamDate(displayJam.startsAt)}</span>{displayJam.location && <span><MapPin size={18} /> {displayJam.location}</span>}</div>
-        <motion.button whileTap={reduceMotion ? undefined : { scale: 0.97 }} className="primary-button full-button" onClick={accept}>{alreadyMember ? 'Apri la jam' : 'Partecipa alla jam'} <ArrowRight size={19} /></motion.button>
+        <div className="join-details"><span><CalendarDays size={18} /> {formatCompactJamDate(displayJam.startsAt, language)}</span>{displayJam.location && <span><MapPin size={18} /> {displayJam.location}</span>}</div>
+        <motion.button whileTap={reduceMotion ? undefined : { scale: 0.97 }} className="primary-button full-button" onClick={accept}>{t(alreadyMember ? 'join.openJam' : 'join.joinJam')} <ArrowRight size={19} /></motion.button>
       </motion.section>
     </main>
   )

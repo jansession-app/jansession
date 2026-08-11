@@ -7,20 +7,23 @@ import { SongCard } from '../components/SongCard'
 import { useData } from '../data/DataContext'
 import { jamSongs } from '../data/selectors'
 import type { SongStatus } from '../domain/types'
+import { useI18n } from '../i18n/LanguageContext'
+import type { TranslationKey } from '../i18n/translations'
 
 const MotionLink = motion.create(Link)
 
-const GROUPS: { status: SongStatus; title: string }[] = [
-  { status: 'READY', title: 'Pronti' },
-  { status: 'PLAYABLE', title: 'Suonabili' },
-  { status: 'TO_PREPARE', title: 'Da preparare' },
-  { status: 'INCOMPLETE', title: 'Incompleti' },
+const GROUPS: { status: SongStatus; titleKey: TranslationKey }[] = [
+  { status: 'READY', titleKey: 'songs.group.ready' },
+  { status: 'PLAYABLE', titleKey: 'songs.group.playable' },
+  { status: 'TO_PREPARE', titleKey: 'songs.group.toPrepare' },
+  { status: 'INCOMPLETE', titleKey: 'songs.group.incomplete' },
 ]
 
 export function JamSongsPage() {
   const { jamId = '' } = useParams()
   const { data } = useData()
   const reduceMotion = useReducedMotion()
+  const { t } = useI18n()
   const jam = data.jams.find((item) => item.id === jamId)
   if (!jam) return null
   const songs = jamSongs(data, jamId)
@@ -30,8 +33,8 @@ export function JamSongsPage() {
     <main className="page jam-page app-screen">
       <motion.header className="tab-header jam-hero jam-section-header" layoutId={`jam-section-${jamId}-songs`} transition={{ type: 'spring', stiffness: 370, damping: 34 }}>
         <JamOverviewLink jamId={jamId} jamName={jam.name} />
-        <div className="section-title-row"><h1>Brani</h1><span>{songs.length}</span></div>
-        {playableCount > 0 && <p className="section-compact-meta">{playableCount} {playableCount === 1 ? 'suonabile' : 'suonabili'}</p>}
+        <div className="section-title-row"><h1>{t('songs.title')}</h1><span>{songs.length}</span></div>
+        {playableCount > 0 && <p className="section-compact-meta">{t(playableCount === 1 ? 'songs.playableOne' : 'songs.playableMany', { count: playableCount })}</p>}
       </motion.header>
 
       <div className="jam-content">
@@ -42,16 +45,16 @@ export function JamSongsPage() {
             <motion.section className="song-group" key={group.status} layout transition={{ type: 'spring', stiffness: 390, damping: 35 }}>
               <div className="group-heading">
                 <div className={`group-mark status-${group.status.toLowerCase()}`} aria-hidden="true" />
-                <h2>{group.title} <span>· {grouped.length}</span></h2>
+                <h2>{t(group.titleKey)} <span>· {grouped.length}</span></h2>
               </div>
               <div className="card-list">
                 <AnimatePresence initial={false}>{grouped.map(({ song, details }) => <SongCard key={song.id} jamId={jamId} song={song} details={details} />)}</AnimatePresence>
               </div>
             </motion.section>
           )
-        })}</AnimatePresence> : <EmptyState icon={Music2} title="Nessun brano" body="Proponi il primo brano per iniziare." />}
+        })}</AnimatePresence> : <EmptyState icon={Music2} title={t('songs.emptyTitle')} body={t('songs.emptyBody')} />}
       </div>
-      {jam.proposalsOpen && <MotionLink className="floating-action" to={`/jam/${jamId}/propose`} whileTap={reduceMotion ? undefined : { scale: 0.965 }}><Plus size={21} /> Proponi brano</MotionLink>}
+      {jam.proposalsOpen && <MotionLink className="floating-action" to={`/jam/${jamId}/propose`} whileTap={reduceMotion ? undefined : { scale: 0.965 }}><Plus size={21} /> {t('songs.propose')}</MotionLink>}
     </main>
   )
 }

@@ -1,22 +1,38 @@
+import type { TranslationKey } from '../i18n/translations'
 import type { PreparationState, SongStatus } from './types'
 
-export const STATUS_META: Record<SongStatus, { label: string }> = {
-  READY: { label: 'Pronto' },
-  PLAYABLE: { label: 'Suonabile' },
-  TO_PREPARE: { label: 'Da preparare' },
-  INCOMPLETE: { label: 'Incompleto' },
+export const STATUS_LABEL_KEYS: Record<SongStatus, TranslationKey> = {
+  READY: 'status.ready',
+  PLAYABLE: 'status.playable',
+  TO_PREPARE: 'status.toPrepare',
+  INCOMPLETE: 'status.incomplete',
 }
 
-export const PREPARATION_LABELS: Record<PreparationState, string> = {
-  UNKNOWN: 'Non la conosco',
-  NEEDS_LISTENING: 'Da ascoltare',
-  KNOWS_STRUCTURE: 'Conosco la struttura',
-  READY: 'Pronto',
+export const PREPARATION_LABEL_KEYS: Record<PreparationState, TranslationKey> = {
+  UNKNOWN: 'preparation.unknown',
+  NEEDS_LISTENING: 'preparation.needsListening',
+  KNOWS_STRUCTURE: 'preparation.knowsStructure',
+  READY: 'preparation.ready',
 }
 
-export const PREPARATION_HELP: Record<PreparationState, string> = {
-  UNKNOWN: 'Non hai ancora indicato una preparazione.',
-  NEEDS_LISTENING: 'Ascoltala prima della jam.',
-  KNOWS_STRUCTURE: 'Conosci intro, strofe, ritornelli, passaggi e finale.',
-  READY: 'Ti senti pronto a suonarla.',
+export const PREPARATION_HELP_KEYS: Record<PreparationState, TranslationKey> = {
+  UNKNOWN: 'preparation.help.unknown',
+  NEEDS_LISTENING: 'preparation.help.needsListening',
+  KNOWS_STRUCTURE: 'preparation.help.knowsStructure',
+  READY: 'preparation.help.ready',
+}
+
+export const JAM_ROLE_LABEL_KEYS = {
+  organizer: 'jam.role.organizer',
+  'co-organizer': 'jam.role.coOrganizer',
+  musician: 'jam.role.musician',
+} as const satisfies Record<import('./types').JamRole, TranslationKey>
+
+export const INSTRUMENT_LABEL_KEYS: Partial<Record<string, TranslationKey>> = {
+  Voce: 'instrument.voice',
+  Chitarra: 'instrument.guitar',
+  Basso: 'instrument.bass',
+  Batteria: 'instrument.drums',
+  Tastiere: 'instrument.keys',
+  Percussioni: 'instrument.percussion',
 }

@@ -5,12 +5,14 @@ import { Link, Navigate, Outlet, useLocation, useOutlet, useParams } from 'react
 import { useData } from '../data/DataContext'
 import { preserveAfterOnboardingRoute } from '../invites/inviteFlow'
 import { activeGlobalNavigation, GLOBAL_NAVIGATION } from '../navigation'
+import { useI18n } from '../i18n/LanguageContext'
 
 export function RootShell() {
   const { data, mode, loading, syncError } = useData()
   const location = useLocation()
   const outlet = useOutlet()
   const reduceMotion = useReducedMotion()
+  const { t } = useI18n()
   const currentDepth = routeDepth(location.pathname)
   const previousDepth = useRef(currentDepth)
   const direction = currentDepth === previousDepth.current
@@ -21,7 +23,7 @@ export function RootShell() {
     previousDepth.current = currentDepth
   }, [currentDepth])
 
-  if (loading) return <div className="auth-loading"><span>Caricamento…</span></div>
+  if (loading) return <div className="auth-loading"><span>{t('common.loading')}</span></div>
   const profile = mode === 'supabase' ? data.profiles.find((item) => item.id === data.currentUserId) : null
   if (mode === 'supabase' && profile && !profile.onboarded && location.pathname !== '/profile') {
     preserveAfterOnboardingRoute(location.pathname, window.localStorage)
@@ -71,15 +73,16 @@ const RouteLayer = forwardRef<HTMLDivElement, { children: ReactNode; direction: 
 })
 
 function GlobalNavigation({ pathname }: { pathname: string }) {
+  const { t } = useI18n()
   const activeArea = activeGlobalNavigation(pathname)
   const icons = { jams: CalendarRange, profile: UserRound }
-  return <nav className="bottom-nav" aria-label="Navigazione principale">{GLOBAL_NAVIGATION.map(({ key, to, label }) => {
+  return <nav className="bottom-nav" aria-label={t('navigation.mainAria')}>{GLOBAL_NAVIGATION.map(({ key, to }) => {
     const Icon = icons[key]
     const active = activeArea === key
     return <Link key={key} to={to} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
       {active && <motion.span className="bottom-nav-indicator" layoutId="global-navigation-indicator" transition={{ type: 'spring', stiffness: 440, damping: 34, mass: 0.7 }} />}
       <span className="bottom-nav-icon"><Icon size={20} strokeWidth={2} aria-hidden="true" /></span>
-      <span className="bottom-nav-label">{label}</span>
+      <span className="bottom-nav-label">{t(key === 'jams' ? 'navigation.jams' : 'navigation.profile')}</span>
     </Link>
   })}</nav>
 }
@@ -94,8 +97,9 @@ function routeDepth(pathname: string) {
 export function JamShell() {
   const { jamId = '' } = useParams()
   const { data } = useData()
+  const { t } = useI18n()
   const jam = data.jams.find((item) => item.id === jamId)
-  if (!jam) return <main className="page"><p>Jam non trovata.</p></main>
+  if (!jam) return <main className="page"><p>{t('jam.notFound')}</p></main>
 
   return (
     <div className="jam-shell">

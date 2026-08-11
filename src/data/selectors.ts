@@ -1,5 +1,6 @@
 import { deriveSongStatus } from '../domain/songStatus'
 import type { AppData, Song } from '../domain/types'
+import type { Language } from '../i18n/language'
 
 export function songDetails(data: AppData, song: Song) {
   const slots = data.slots.filter((slot) => slot.songId === song.id)
@@ -22,20 +23,25 @@ export function isManager(data: AppData, jamId: string, userId = data.currentUse
   return role === 'organizer' || role === 'co-organizer'
 }
 
-export function formatJamDate(startsAt: string, withTime = false) {
+function localeFor(language: Language) {
+  return language === 'it' ? 'it-IT' : 'en-GB'
+}
+
+export function formatJamDate(startsAt: string, language: Language, withTime = false) {
   const date = new Date(startsAt)
-  return new Intl.DateTimeFormat('it-IT', withTime
-    ? { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }
+  return new Intl.DateTimeFormat(localeFor(language), withTime
+    ? { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: false }
     : { day: 'numeric', month: 'long' }).format(date)
 }
 
-export function formatCompactJamDate(startsAt: string) {
-  const formatted = new Intl.DateTimeFormat('it-IT', {
+export function formatCompactJamDate(startsAt: string, language: Language) {
+  const formatted = new Intl.DateTimeFormat(localeFor(language), {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
   }).format(new Date(startsAt)).replaceAll('.', '')
 
   return formatted.charAt(0).toUpperCase() + formatted.slice(1).replace(/,\s*/, ' · ')

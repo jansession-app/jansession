@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { activeGlobalNavigation, GLOBAL_NAVIGATION, jamIdFromRoute, jamRoutes, joinedJamRoute } from './navigation'
 
 describe('global navigation', () => {
-  it('contains only Jams and Profilo', () => {
+  it('contains only the global jams and profile destinations', () => {
     expect(GLOBAL_NAVIGATION).toEqual([
-      { key: 'jams', label: 'Jams', to: '/jams' },
-      { key: 'profile', label: 'Profilo', to: '/profile' },
+      { key: 'jams', to: '/jams' },
+      { key: 'profile', to: '/profile' },
     ])
   })
 
