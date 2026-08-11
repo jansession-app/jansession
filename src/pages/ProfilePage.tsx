@@ -11,6 +11,7 @@ import { BottomSheet } from '../components/BottomSheet'
 import { useI18n } from '../i18n/LanguageContext'
 import type { TranslationKey } from '../i18n/translations'
 import { displayInstrument } from '../domain/songStatus'
+import { PushNotificationsSection } from '../push/PushNotificationsSection'
 
 const MIN_PASSWORD_LENGTH = 6
 
@@ -87,6 +88,7 @@ export function ProfilePage() {
             <ChevronRight size={18} aria-hidden="true" />
           </button>
         </section>
+        {mode === 'supabase' && <PushNotificationsSection userId={data.currentUserId} />}
         {mode === 'supabase' && <section className="profile-section profile-password-section">
           <div className="profile-section-heading"><h2>{t('profile.password')}</h2></div>
           <form onSubmit={savePassword}>
