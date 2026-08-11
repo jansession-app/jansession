@@ -2,6 +2,7 @@ import { Lock, Link2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useData } from '../data/DataContext'
+import { jamRoutes } from '../navigation'
 
 export function NewJamPage() {
   const { actions } = useData()
@@ -13,7 +14,7 @@ export function NewJamPage() {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     const id = actions.addJam({ name: name.trim(), startsAt: new Date(startsAt).toISOString(), location: location.trim() || undefined, visibility })
-    navigate(`/jam/${id}/songs`)
+    navigate(jamRoutes(id).overview)
   }
   return (
       <main className="page form-page new-jam-page app-screen">

@@ -44,7 +44,7 @@ export function preserveAfterOnboardingRoute(pathname: string, storage: RouteSto
 }
 
 export function takeAfterOnboardingRoute(storage: RouteStorage): string {
-  const route = storage.getItem(STORAGE_KEYS.afterOnboarding) ?? '/home'
+  const route = storage.getItem(STORAGE_KEYS.afterOnboarding) ?? '/jams'
   storage.removeItem(STORAGE_KEYS.afterOnboarding)
   return route
 }

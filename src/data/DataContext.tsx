@@ -110,16 +110,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     try {
       if (!isDemo) await remoteMutations.removeJamParticipant(jamId, userId)
       update((current) => removeJamMemberFromData(current, jamId, userId))
-      if (userId === data.currentUserId && window.localStorage.getItem(STORAGE_KEYS.activeJam) === jamId) {
-        window.localStorage.removeItem(STORAGE_KEYS.activeJam)
-      }
       return true
     } catch (error: unknown) {
       reportDataError('Aggiornamento partecipanti Supabase non riuscito', error)
       setSyncError('Non è stato possibile aggiornare i partecipanti. Riprova.')
       return false
     }
-  }, [data.currentUserId, isDemo, update])
+  }, [isDemo, update])
 
   const actions = useMemo<DataActions>(() => ({
     setPreparation(songId, state) {
@@ -244,9 +241,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       try {
         if (!isDemo) await remoteMutations.deleteJam(jamId)
         update((current) => removeJamFromData(current, jamId))
-        if (window.localStorage.getItem(STORAGE_KEYS.activeJam) === jamId) {
-          window.localStorage.removeItem(STORAGE_KEYS.activeJam)
-        }
         return true
       } catch (error: unknown) {
         reportDataError('Eliminazione jam Supabase non riuscita', error)

@@ -1,4 +1,4 @@
-import { ExternalLink, Hand, Headphones, Pencil, Trash2, UserPlus } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Hand, Headphones, Pencil, Trash2, UserPlus } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { StatusBadge } from '../components/StatusBadge'
 import { useData } from '../data/DataContext'
@@ -6,6 +6,7 @@ import { isManager, songDetails } from '../data/selectors'
 import { PREPARATION_HELP, PREPARATION_LABELS } from '../domain/labels'
 import { statusSummary } from '../domain/songStatus'
 import type { PreparationState } from '../domain/types'
+import { jamRoutes } from '../navigation'
 
 const PREPARATION_OPTIONS: PreparationState[] = ['UNKNOWN', 'NEEDS_LISTENING', 'KNOWS_STRUCTURE', 'READY']
 
@@ -24,6 +25,7 @@ export function SongDetailPage() {
   const canDelete = manager || song.proposerId === data.currentUserId
   return (
     <main className="page detail-page app-screen">
+      <div className="screen-bar song-detail-bar"><Link className="back-link" to={jamRoutes(jamId).songs}><ArrowLeft size={18} aria-hidden="true" /> Brani</Link></div>
       <section className="song-title-block">
         <h1>{song.title}</h1>
         <p>{song.artist}</p>

@@ -1,8 +1,9 @@
-import { Minus, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Minus, Plus, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../data/DataContext'
 import { INSTRUMENTS } from '../domain/types'
+import { jamRoutes } from '../navigation'
 
 interface RoleInput { instrument: string; quantity: number }
 
@@ -38,6 +39,7 @@ export function ProposeSongPage() {
 
   return (
     <main className="page form-page app-screen">
+      <div className="screen-bar"><Link className="back-link" to={jamRoutes(jamId).songs}><ArrowLeft size={18} aria-hidden="true" /> Brani</Link></div>
       <header><p className="eyebrow">Nuova proposta</p><h1>Che cosa suoniamo?</h1><p>Indica il brano e la formazione esatta che serve.</p></header>
       <form onSubmit={submit}>
         <label className="field"><span>Titolo</span><input autoFocus required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="es. Reptilia" /></label>

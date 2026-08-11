@@ -6,6 +6,7 @@ import { formatJamDate } from '../data/selectors'
 import { PRODUCT_NAME } from '../domain/types'
 import { supabase } from '../lib/supabase'
 import { remoteMutations } from '../data/supabaseRepository'
+import { joinedJamRoute } from '../navigation'
 
 interface InvitePreview { id: string; name: string; startsAt: string; location?: string }
 
@@ -33,18 +34,18 @@ export function JoinPage() {
   if (!displayJam) return (
     <main className="join-page">
       <div className="join-brand"><strong>{PRODUCT_NAME}</strong></div>
-      <section className="join-card"><span className="join-code">Invito non valido</span><h1>Questa jam non è disponibile.</h1><p>Controlla che il link ricevuto sia completo.</p><button className="primary-button" onClick={() => navigate('/home')}>Vai alla home</button></section>
+      <section className="join-card"><span className="join-code">Invito non valido</span><h1>Questa jam non è disponibile.</h1><p>Controlla che il link ricevuto sia completo.</p><button className="primary-button" onClick={() => navigate('/jams')}>Vai alle jam</button></section>
     </main>
   )
 
   const accept = async () => {
     if (jam) {
       const id = actions.acceptInvite(inviteCode)
-      if (id) navigate(`/jam/${id}/songs`)
+      if (id) navigate(joinedJamRoute(id))
       return
     }
     const id = await remoteMutations.acceptInvite(inviteCode)
-    navigate(`/jam/${id}/songs`)
+    navigate(joinedJamRoute(id))
   }
   return (
     <main className="join-page">

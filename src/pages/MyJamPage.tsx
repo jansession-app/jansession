@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState'
 import { useData } from '../data/DataContext'
 import { PREPARATION_LABELS } from '../domain/labels'
 import type { PreparationState } from '../domain/types'
+import { JamOverviewLink } from '../components/JamOverviewLink'
 
 const GROUPS: { state: PreparationState; label: string }[] = [
   { state: 'UNKNOWN', label: 'Non conosco' },
@@ -28,6 +29,7 @@ export function MyJamPage() {
   return (
     <main className="page tab-page app-screen">
       <header className="tab-header my-header">
+        {jam && <JamOverviewLink jamId={jamId} jamName={jam.name} />}
         <p className="eyebrow">{jam?.name}</p>
         <h1>Prima della jam</h1>
         <div className="workload-number"><strong>{listeningCount}</strong><span>{listeningCount === 1 ? 'brano da ascoltare' : 'brani da ascoltare'}</span></div>

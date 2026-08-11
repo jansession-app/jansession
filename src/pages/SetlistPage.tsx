@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ListMusic, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
+import { JamOverviewLink } from '../components/JamOverviewLink'
 import { StatusBadge } from '../components/StatusBadge'
 import { useData } from '../data/DataContext'
 import { formatJamDate, isManager, jamSongs, songDetails } from '../data/selectors'
@@ -19,6 +20,7 @@ export function SetlistPage() {
   return (
     <main className="page tab-page app-screen">
       <header className="tab-header">
+        {jam && <JamOverviewLink jamId={jamId} jamName={jam.name} />}
         {jam && <div className="jam-context"><strong>{jam.name}</strong><span>{formatJamDate(jam.startsAt, true)}</span></div>}
         <h1>Scaletta</h1>
         <p>I brani restano in posizione anche se la formazione cambia.</p>

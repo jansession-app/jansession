@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage'
 import { EditSongPage } from './pages/EditSongPage'
 import { JamSongsPage } from './pages/JamSongsPage'
 import { JamSettingsPage } from './pages/JamSettingsPage'
+import { JamOverviewPage } from './pages/JamOverviewPage'
 import { JoinPage } from './pages/JoinPage'
 import { MusiciansPage } from './pages/MusiciansPage'
 import { MyJamPage } from './pages/MyJamPage'
@@ -17,13 +18,14 @@ export default function App() {
   return (
     <Routes>
       <Route element={<RootShell />}>
-        <Route index element={<Navigate to="/home" replace />} />
-        <Route path="home" element={<HomePage />} />
+        <Route index element={<Navigate to="/jams" replace />} />
+        <Route path="jams" element={<HomePage />} />
+        <Route path="home" element={<Navigate to="/jams" replace />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="join/:inviteCode" element={<JoinPage />} />
         <Route path="jam/new" element={<NewJamPage />} />
         <Route path="jam/:jamId" element={<JamShell />}>
-          <Route index element={<Navigate to="songs" replace />} />
+          <Route index element={<JamOverviewPage />} />
           <Route path="songs" element={<JamSongsPage />} />
           <Route path="song/:songId" element={<SongDetailPage />} />
           <Route path="song/:songId/edit" element={<EditSongPage />} />
@@ -33,7 +35,7 @@ export default function App() {
           <Route path="settings" element={<JamSettingsPage />} />
           <Route path="me" element={<MyJamPage />} />
         </Route>
-        <Route path="*" element={<Navigate to="/home" replace />} />
+        <Route path="*" element={<Navigate to="/jams" replace />} />
       </Route>
     </Routes>
   )

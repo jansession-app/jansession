@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../data/DataContext'
 import { canDeleteJam } from '../data/jamDeletion'
+import { JamOverviewLink } from '../components/JamOverviewLink'
 
 export const DELETE_JAM_CONFIRMATION = 'Eliminare definitivamente questa jam?\n\nVerranno eliminati anche brani, scaletta, assegnazioni e dati collegati.'
 
@@ -32,12 +33,12 @@ export function JamSettingsPage() {
     const deleted = await actions.deleteJam(jamId)
     setDeleting(false)
     if (deleted) {
-      navigate('/home', { replace: true })
+      navigate('/jams', { replace: true })
       return
     }
     setDeleteError('Non è stato possibile eliminare la jam. Riprova.')
   }
-  return <main className="page form-page app-screen"><header><p className="eyebrow">Organizzazione</p><h1>Gestisci la jam</h1><p>Modifica i dettagli e decidi quando i musicisti possono proporre o assegnarsi.</p></header><form onSubmit={submit}>
+  return <main className="page form-page app-screen"><JamOverviewLink jamId={jamId} jamName={jam.name} /><header><p className="eyebrow">Organizzazione</p><h1>Gestisci la jam</h1><p>Modifica i dettagli e decidi quando i musicisti possono proporre o assegnarsi.</p></header><form onSubmit={submit}>
     <label className="field"><span>Nome</span><input required value={name} onChange={(event) => setName(event.target.value)} /></label>
     <label className="field"><span>Data e ora</span><input required type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label>
     <label className="field"><span>Luogo</span><input value={location} onChange={(event) => setLocation(event.target.value)} /></label>

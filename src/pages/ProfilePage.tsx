@@ -81,7 +81,7 @@ export function ProfilePage() {
           {passwordSuccess && <p className="form-success" role="status">{passwordSuccess}</p>}
         </section>}
         {mode === 'supabase' && <button className="secondary-button full-button" type="button" onClick={() => { void supabase?.auth.signOut() }}><LogOut size={18} /> Esci</button>}
-        {mode === 'demo' && <div className="demo-tools"><p className="demo-note">Dati demo salvati su questo dispositivo</p><button type="button" onClick={() => { actions.resetDemo(); navigate('/home') }}><RotateCcw size={14} /> Ripristina demo</button></div>}
+        {mode === 'demo' && <div className="demo-tools"><p className="demo-note">Dati demo salvati su questo dispositivo</p><button type="button" onClick={() => { actions.resetDemo(); navigate('/jams') }}><RotateCcw size={14} /> Ripristina demo</button></div>}
         <p className="partner-credit">{PARTNER_CREDIT}</p>
       </main>
   )

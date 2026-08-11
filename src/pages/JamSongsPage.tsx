@@ -1,6 +1,7 @@
 import { MapPin, Plus, UsersRound } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
+import { JamOverviewLink } from '../components/JamOverviewLink'
 import { SongCard } from '../components/SongCard'
 import { useData } from '../data/DataContext'
 import { formatJamDate, jamSongs } from '../data/selectors'
@@ -25,6 +26,7 @@ export function JamSongsPage() {
   return (
     <main className="page jam-page app-screen">
       <header className="tab-header jam-hero">
+        <JamOverviewLink jamId={jamId} jamName={jam.name} />
         <div className="jam-context"><strong>{jam.name}</strong><span>{formatJamDate(jam.startsAt, true)}</span></div>
         <h1>Brani</h1>
         <div className="jam-facts">

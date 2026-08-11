@@ -2,6 +2,7 @@ import { Check, Copy, Crown, LogOut, MapPin, Settings2, Share2, ShieldCheck, Tra
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useData } from '../data/DataContext'
+import { JamOverviewLink } from '../components/JamOverviewLink'
 import { formatJamDate, isManager } from '../data/selectors'
 import { buildInviteUrl } from '../invites/inviteFlow'
 import { canLeaveJam, canRemoveJamMember } from '../data/jamMembership'
@@ -57,7 +58,7 @@ export function MusiciansPage() {
     const left = await actions.leaveJam(jamId)
     setActingMemberId('')
     if (left) {
-      navigate('/home', { replace: true })
+      navigate('/jams', { replace: true })
       return
     }
     setMembershipError('Non è stato possibile abbandonare la jam. Riprova.')
@@ -66,6 +67,7 @@ export function MusiciansPage() {
   return (
     <main className="page tab-page app-screen">
       <header className="tab-header">
+        <JamOverviewLink jamId={jamId} jamName={jam.name} />
         <div className="jam-context"><strong>{jam.name}</strong><span>{formatJamDate(jam.startsAt, true)}</span></div>
         <h1>Musicisti</h1>
         <p>{members.length} partecipanti · strumenti disponibili nella jam.</p>

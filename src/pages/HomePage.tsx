@@ -6,6 +6,7 @@ import { useData } from '../data/DataContext'
 import { formatJamDate, jamsForUser, songDetails } from '../data/selectors'
 import { PRODUCT_NAME } from '../config/brand'
 import { PREPARATION_LABELS } from '../domain/labels'
+import { jamRoutes } from '../navigation'
 
 export function HomePage() {
   const { data } = useData()
@@ -26,7 +27,7 @@ export function HomePage() {
   return (
     <main className="page page-home app-screen">
       <header className="home-appbar">
-        <span className="home-brand">{PRODUCT_NAME}</span>
+        <span className="home-brand">{PRODUCT_NAME} · Jams</span>
       </header>
       <section className="home-hero">
         <h1>Ciao {me?.displayName ?? 'musicista'}</h1>
@@ -53,7 +54,7 @@ export function HomePage() {
             {myJams.map((jam) => {
               const participants = data.members.filter((member) => member.jamId === jam.id).length
               return (
-                <Link className="jam-card" to={`/jam/${jam.id}/songs`} key={jam.id}>
+                <Link className="jam-card" to={jamRoutes(jam.id).overview} key={jam.id}>
                   <div className="jam-card-date"><strong>{new Date(jam.startsAt).getDate()}</strong><span>{new Intl.DateTimeFormat('it-IT', { month: 'short' }).format(new Date(jam.startsAt))}</span></div>
                   <div>
                     <h3>{jam.name}</h3>
