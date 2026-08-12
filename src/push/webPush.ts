@@ -1,14 +1,12 @@
 import type { Language } from '../i18n/language'
-import { supabase } from '../lib/supabase'
-import { removeDeviceSubscription, saveDeviceSubscription, updateDeviceSubscriptionLocale } from './subscriptionStore'
+import { removeDeviceSubscription, saveDeviceSubscription, updateDeviceSubscriptionPreferences } from './subscriptionStore'
 import { supabasePushRepository } from './supabasePushRepository'
-import { getWebPushSupport, urlBase64ToUint8Array, type WebPushSupport } from './webPushSupport'
+import { getWebPushSupport, resolveDeviceTimeZone, urlBase64ToUint8Array, type WebPushSupport } from './webPushSupport'
 
 export type PushPermissionState = 'enabled' | 'disabled' | 'denied'
 
 export interface PushNotificationState {
   permission: PushPermissionState
-  subscriptionId?: string
 }
 
 const vapidPublicKey = import.meta.env.VITE_WEB_PUSH_PUBLIC_KEY?.trim()
@@ -40,7 +38,7 @@ export async function registerPushServiceWorker() {
 function serializeSubscription(subscription: PushSubscription, userId: string, locale: Language) {
   const json = subscription.toJSON()
   if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) throw new Error('Incomplete push subscription.')
-  return { userId, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth, locale }
+  return { userId, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth, locale, timezone: resolveDeviceTimeZone() }
 }
 
 async function currentBrowserSubscription() {
@@ -52,8 +50,8 @@ export async function readPushNotificationState(userId: string, locale: Language
   if (Notification.permission === 'denied') return { permission: 'denied' }
   const subscription = await currentBrowserSubscription()
   if (!subscription) return { permission: 'disabled' }
-  const saved = await saveDeviceSubscription(supabasePushRepository, serializeSubscription(subscription, userId, locale))
-  return { permission: 'enabled', subscriptionId: saved.id }
+  await saveDeviceSubscription(supabasePushRepository, serializeSubscription(subscription, userId, locale))
+  return { permission: 'enabled' }
 }
 
 export async function enablePushNotifications(userId: string, locale: Language): Promise<PushNotificationState> {
@@ -67,8 +65,8 @@ export async function enablePushNotifications(userId: string, locale: Language):
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
   })
-  const saved = await saveDeviceSubscription(supabasePushRepository, serializeSubscription(subscription, userId, locale))
-  return { permission: 'enabled', subscriptionId: saved.id }
+  await saveDeviceSubscription(supabasePushRepository, serializeSubscription(subscription, userId, locale))
+  return { permission: 'enabled' }
 }
 
 export async function disablePushNotifications(userId: string): Promise<PushNotificationState> {
@@ -79,15 +77,9 @@ export async function disablePushNotifications(userId: string): Promise<PushNoti
   return { permission: 'disabled' }
 }
 
-export async function syncPushSubscriptionLocale(userId: string, locale: Language) {
+export async function syncPushSubscriptionPreferences(userId: string, locale: Language) {
   if (detectWebPushSupport() !== 'supported' || Notification.permission !== 'granted') return
   const subscription = await currentBrowserSubscription()
   if (!subscription) return
-  await updateDeviceSubscriptionLocale(supabasePushRepository, userId, subscription.endpoint, locale)
-}
-
-export async function sendTestPushNotification(subscriptionId: string) {
-  if (!supabase) throw new Error('Supabase is not configured.')
-  const { error } = await supabase.functions.invoke('dispatch-push', { body: { subscriptionId } })
-  if (error) throw error
+  await updateDeviceSubscriptionPreferences(supabasePushRepository, userId, subscription.endpoint, locale, resolveDeviceTimeZone())
 }

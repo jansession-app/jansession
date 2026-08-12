@@ -1,4 +1,4 @@
-import { Bell, BellOff, Send } from 'lucide-react'
+import { Bell, BellOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n/LanguageContext'
 import {
@@ -6,7 +6,6 @@ import {
   disablePushNotifications,
   enablePushNotifications,
   readPushNotificationState,
-  sendTestPushNotification,
   type PushNotificationState,
 } from './webPush'
 import type { WebPushSupport } from './webPushSupport'
@@ -16,9 +15,7 @@ type ViewState = 'loading' | WebPushSupport | PushNotificationState['permission'
 export function PushNotificationsSection({ userId }: { userId: string }) {
   const { language, t } = useI18n()
   const [viewState, setViewState] = useState<ViewState>('loading')
-  const [subscriptionId, setSubscriptionId] = useState<string>()
-  const [working, setWorking] = useState<'enable' | 'disable' | 'test' | null>(null)
-  const [testSent, setTestSent] = useState(false)
+  const [working, setWorking] = useState<'enable' | 'disable' | null>(null)
 
   useEffect(() => {
     const support = detectWebPushSupport()
@@ -30,7 +27,6 @@ export function PushNotificationsSection({ userId }: { userId: string }) {
     void readPushNotificationState(userId, language).then((state) => {
       if (!active) return
       setViewState(state.permission)
-      setSubscriptionId(state.subscriptionId)
     }).catch(() => {
       if (active) setViewState('error')
     })
@@ -39,11 +35,9 @@ export function PushNotificationsSection({ userId }: { userId: string }) {
 
   const enable = async () => {
     setWorking('enable')
-    setTestSent(false)
     try {
       const state = await enablePushNotifications(userId, language)
       setViewState(state.permission)
-      setSubscriptionId(state.subscriptionId)
     } catch {
       setViewState('error')
     } finally {
@@ -53,25 +47,9 @@ export function PushNotificationsSection({ userId }: { userId: string }) {
 
   const disable = async () => {
     setWorking('disable')
-    setTestSent(false)
     try {
       const state = await disablePushNotifications(userId)
       setViewState(state.permission)
-      setSubscriptionId(undefined)
-    } catch {
-      setViewState('error')
-    } finally {
-      setWorking(null)
-    }
-  }
-
-  const sendTest = async () => {
-    if (!subscriptionId) return
-    setWorking('test')
-    setTestSent(false)
-    try {
-      await sendTestPushNotification(subscriptionId)
-      setTestSent(true)
     } catch {
       setViewState('error')
     } finally {
@@ -94,12 +72,7 @@ export function PushNotificationsSection({ userId }: { userId: string }) {
         <span><strong id="profile-notifications-title">{t('profile.notifications')}</strong><small>{t(statusKey)}</small></span>
       </div>
       {viewState === 'disabled' && <button className="secondary-button" type="button" onClick={() => { void enable() }} disabled={working !== null}>{working === 'enable' ? t('common.wait') : t('profile.notificationsEnable')}</button>}
-      {viewState === 'enabled' && <div className="profile-notifications-actions">
-        <button className="secondary-button" type="button" onClick={() => { void sendTest() }} disabled={working !== null}><Send size={15} aria-hidden="true" /> {working === 'test' ? t('common.wait') : t('profile.notificationsTest')}</button>
-        <button className="text-button" type="button" onClick={() => { void disable() }} disabled={working !== null}>{working === 'disable' ? t('common.wait') : t('profile.notificationsDisable')}</button>
-      </div>}
-      {viewState === 'enabled' && <p className="profile-notifications-hint">{t('profile.notificationsTestHint')}</p>}
-      {testSent && <p className="form-success" role="status">{t('profile.notificationsTestSent')}</p>}
+      {viewState === 'enabled' && <button className="text-button" type="button" onClick={() => { void disable() }} disabled={working !== null}>{working === 'disable' ? t('common.wait') : t('profile.notificationsDisable')}</button>}
     </section>
   )
 }

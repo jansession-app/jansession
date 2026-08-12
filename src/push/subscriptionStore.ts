@@ -6,6 +6,7 @@ export interface PushSubscriptionInput {
   p256dh: string
   auth: string
   locale: Language
+  timezone: string
 }
 
 export interface PushSubscriptionRecord extends PushSubscriptionInput {
@@ -15,7 +16,7 @@ export interface PushSubscriptionRecord extends PushSubscriptionInput {
 export interface PushSubscriptionRepository {
   findByEndpoint(userId: string, endpoint: string): Promise<PushSubscriptionRecord | null>
   insert(input: PushSubscriptionInput): Promise<PushSubscriptionRecord>
-  update(id: string, userId: string, input: Pick<PushSubscriptionInput, 'p256dh' | 'auth' | 'locale'>): Promise<PushSubscriptionRecord>
+  update(id: string, userId: string, input: Pick<PushSubscriptionInput, 'p256dh' | 'auth' | 'locale' | 'timezone'>): Promise<PushSubscriptionRecord>
   remove(userId: string, endpoint: string): Promise<void>
 }
 
@@ -26,6 +27,7 @@ export async function saveDeviceSubscription(repository: PushSubscriptionReposit
     p256dh: input.p256dh,
     auth: input.auth,
     locale: input.locale,
+    timezone: input.timezone,
   })
 }
 
@@ -33,12 +35,13 @@ export async function removeDeviceSubscription(repository: PushSubscriptionRepos
   await repository.remove(userId, endpoint)
 }
 
-export async function updateDeviceSubscriptionLocale(repository: PushSubscriptionRepository, userId: string, endpoint: string, locale: Language) {
+export async function updateDeviceSubscriptionPreferences(repository: PushSubscriptionRepository, userId: string, endpoint: string, locale: Language, timezone: string) {
   const existing = await repository.findByEndpoint(userId, endpoint)
-  if (!existing || existing.locale === locale) return existing
+  if (!existing || (existing.locale === locale && existing.timezone === timezone)) return existing
   return repository.update(existing.id, userId, {
     p256dh: existing.p256dh,
     auth: existing.auth,
     locale,
+    timezone,
   })
 }

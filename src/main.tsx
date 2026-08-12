@@ -6,6 +6,7 @@ import { AuthGate } from './auth/AuthGate'
 import { DataProvider } from './data/DataContext'
 import { LanguageProvider } from './i18n/LanguageContext'
 import { registerPushServiceWorker } from './push/webPush'
+import { PushSubscriptionSynchronizer } from './push/PushSubscriptionSynchronizer'
 import './styles.css'
 
 void registerPushServiceWorker().catch((error: unknown) => {
@@ -18,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
       <AuthGate>
         <HashRouter>
           <DataProvider>
+            <PushSubscriptionSynchronizer />
             <App />
           </DataProvider>
         </HashRouter>

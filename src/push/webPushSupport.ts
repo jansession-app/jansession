@@ -21,3 +21,7 @@ export function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
   const bytes = atob(base64)
   return Uint8Array.from(bytes, (character) => character.charCodeAt(0))
 }
+
+export function resolveDeviceTimeZone(options = Intl.DateTimeFormat().resolvedOptions()) {
+  return options.timeZone?.trim() || 'UTC'
+}

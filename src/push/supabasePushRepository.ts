@@ -8,6 +8,7 @@ type PushSubscriptionRow = {
   p256dh: string
   auth: string
   locale: PushSubscriptionRecord['locale']
+  timezone: string | null
 }
 
 function requireSupabase() {
@@ -23,10 +24,11 @@ function fromRow(row: PushSubscriptionRow): PushSubscriptionRecord {
     p256dh: row.p256dh,
     auth: row.auth,
     locale: row.locale,
+    timezone: row.timezone ?? 'UTC',
   }
 }
 
-const columns = 'id, user_id, endpoint, p256dh, auth, locale'
+const columns = 'id, user_id, endpoint, p256dh, auth, locale, timezone'
 
 export const supabasePushRepository: PushSubscriptionRepository = {
   async findByEndpoint(userId, endpoint) {
@@ -42,7 +44,7 @@ export const supabasePushRepository: PushSubscriptionRepository = {
   async insert(input: PushSubscriptionInput) {
     const { data, error } = await requireSupabase()
       .from('push_subscriptions')
-      .insert({ user_id: input.userId, endpoint: input.endpoint, p256dh: input.p256dh, auth: input.auth, locale: input.locale })
+      .insert({ user_id: input.userId, endpoint: input.endpoint, p256dh: input.p256dh, auth: input.auth, locale: input.locale, timezone: input.timezone })
       .select(columns)
       .single()
     if (error) throw error

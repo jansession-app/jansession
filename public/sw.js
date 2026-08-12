@@ -22,12 +22,14 @@ self.addEventListener('push', (event) => {
   }
   const title = typeof payload.title === 'string' && payload.title ? payload.title : 'JanSession'
   const body = typeof payload.body === 'string' ? payload.body : ''
+  const tag = typeof payload.tag === 'string' && payload.tag ? payload.tag : undefined
   const targetUrl = resolveNotificationTarget(payload.url)
   const icon = new URL('icons/icon-192.png', self.registration.scope).href
 
   event.waitUntil(self.registration.showNotification(title, {
     body,
     icon,
+    tag,
     data: { url: targetUrl },
   }))
 })

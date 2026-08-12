@@ -1,28 +1,28 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4'
 // @ts-types="npm:@types/web-push@3.6.4"
 import webpush from 'npm:web-push@3.6.7'
-import { createTestPushPayload, TEST_PUSH_DELAY_MS, type PushLocale } from './payload.ts'
+import { deliveryOutcome, willRetry } from './dispatchPolicy.ts'
+import { createPushPayload, type PushEventType, type PushLocale } from './payload.ts'
 
-const productionOrigin = 'https://jansession-app.github.io'
-
-function allowedOrigin(request: Request) {
-  const origin = request.headers.get('origin')
-  if (!origin) return productionOrigin
-  if (origin === productionOrigin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin
-  return null
+type ClaimedDelivery = {
+  delivery_id: string
+  event_id: string
+  event_type: PushEventType
+  payload: Record<string, unknown>
+  target_path: string
+  subscription_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  locale: PushLocale
+  timezone: string | null
+  attempt: number
 }
 
-function response(request: Request, body: Record<string, unknown>, status = 200) {
-  const origin = allowedOrigin(request)
+function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': origin ?? productionOrigin,
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Vary': 'Origin',
-    },
+    headers: { 'Content-Type': 'application/json' },
   })
 }
 
@@ -32,13 +32,33 @@ function requiredEnvironmentValue(name: string) {
   return value
 }
 
-function serviceRoleKey() {
+function serviceRoleKeys() {
+  const availableKeys: string[] = []
   const legacyKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
-  if (legacyKey) return legacyKey
+  if (legacyKey) availableKeys.push(legacyKey)
   const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}') as Record<string, string>
-  const key = keys.default?.trim()
-  if (!key) throw new Error('Missing Supabase secret key')
-  return key
+  for (const key of Object.values(keys)) {
+    const normalized = key.trim()
+    if (normalized && !availableKeys.includes(normalized)) availableKeys.push(normalized)
+  }
+  if (availableKeys.length === 0) throw new Error('Missing Supabase secret key')
+  return availableKeys
+}
+
+function safeEqual(left: string, right: string) {
+  const leftBytes = new TextEncoder().encode(left)
+  const rightBytes = new TextEncoder().encode(right)
+  if (leftBytes.length !== rightBytes.length) return false
+  let difference = 0
+  for (let index = 0; index < leftBytes.length; index += 1) {
+    difference |= leftBytes[index]! ^ rightBytes[index]!
+  }
+  return difference === 0
+}
+
+function authorizedServerRequest(request: Request, secretKeys: string[]) {
+  const suppliedKey = request.headers.get('apikey')?.trim()
+  return Boolean(suppliedKey && secretKeys.some((secretKey) => safeEqual(suppliedKey, secretKey)))
 }
 
 function errorStatus(error: unknown) {
@@ -46,63 +66,87 @@ function errorStatus(error: unknown) {
   return typeof error.statusCode === 'number' ? error.statusCode : undefined
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unknown push failure'
+}
+
 Deno.serve(async (request) => {
-  if (!allowedOrigin(request)) return response(request, { error: 'Origin not allowed' }, 403)
-  if (request.method === 'OPTIONS') return response(request, { ok: true })
-  if (request.method !== 'POST') return response(request, { error: 'Method not allowed' }, 405)
+  if (request.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405)
 
   try {
-    const authorization = request.headers.get('authorization')
-    const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1]
-    if (!token) return response(request, { error: 'Authentication required' }, 401)
+    const secretKeys = serviceRoleKeys()
+    if (!authorizedServerRequest(request, secretKeys)) return jsonResponse({ error: 'Authentication required' }, 401)
 
-    const supabaseUrl = requiredEnvironmentValue('SUPABASE_URL')
-    const admin = createClient(supabaseUrl, serviceRoleKey(), {
+    const admin = createClient(requiredEnvironmentValue('SUPABASE_URL'), secretKeys[0]!, {
       auth: { persistSession: false, autoRefreshToken: false },
     })
-    const { data: authData, error: authError } = await admin.auth.getUser(token)
-    if (authError || !authData.user) return response(request, { error: 'Authentication required' }, 401)
+    const { data, error: claimError } = await admin.rpc('claim_push_deliveries', { batch_size: 50 })
+    if (claimError) throw claimError
 
-    const body = await request.json().catch(() => null) as { subscriptionId?: unknown } | null
-    const subscriptionId = typeof body?.subscriptionId === 'string' ? body.subscriptionId : ''
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(subscriptionId)) {
-      return response(request, { error: 'Invalid subscription' }, 400)
+    const deliveries = (data ?? []) as ClaimedDelivery[]
+    const result = { claimed: deliveries.length, sent: 0, retried: 0, failed: 0, skipped: 0 }
+
+    if (deliveries.length > 0) {
+      webpush.setVapidDetails(
+        requiredEnvironmentValue('VAPID_SUBJECT'),
+        requiredEnvironmentValue('VAPID_PUBLIC_KEY'),
+        requiredEnvironmentValue('VAPID_PRIVATE_KEY'),
+      )
     }
 
-    const { data: subscription, error: subscriptionError } = await admin
-      .from('push_subscriptions')
-      .select('id, endpoint, p256dh, auth, locale')
-      .eq('id', subscriptionId)
-      .eq('user_id', authData.user.id)
-      .maybeSingle()
-    if (subscriptionError) throw subscriptionError
-    if (!subscription) return response(request, { error: 'Subscription not found' }, 404)
-
-    webpush.setVapidDetails(
-      requiredEnvironmentValue('VAPID_SUBJECT'),
-      requiredEnvironmentValue('VAPID_PUBLIC_KEY'),
-      requiredEnvironmentValue('VAPID_PRIVATE_KEY'),
-    )
-    const payload = createTestPushPayload(subscription.locale as PushLocale)
-
-    try {
-      await new Promise((resolve) => setTimeout(resolve, TEST_PUSH_DELAY_MS))
-      await webpush.sendNotification({
-        endpoint: subscription.endpoint,
-        keys: { p256dh: subscription.p256dh, auth: subscription.auth },
-      }, JSON.stringify(payload), { TTL: 60, urgency: 'normal' })
-    } catch (error: unknown) {
-      const status = errorStatus(error)
-      if (status === 404 || status === 410) {
-        await admin.from('push_subscriptions').delete().eq('id', subscription.id).eq('user_id', authData.user.id)
-        return response(request, { error: 'Subscription expired' }, 410)
+    for (const delivery of deliveries) {
+      const { data: isCurrent, error: currentError } = await admin.rpc('push_delivery_is_current', {
+        target_delivery_id: delivery.delivery_id,
+      })
+      if (currentError) throw currentError
+      if (!isCurrent) {
+        result.skipped += 1
+        continue
       }
-      throw error
+
+      const notification = createPushPayload({
+        eventId: delivery.event_id,
+        eventType: delivery.event_type,
+        payload: delivery.payload,
+        targetPath: delivery.target_path,
+        locale: delivery.locale,
+        timezone: delivery.timezone,
+      })
+
+      try {
+        const pushResult = await webpush.sendNotification({
+          endpoint: delivery.endpoint,
+          keys: { p256dh: delivery.p256dh, auth: delivery.auth },
+        }, JSON.stringify(notification), {
+          TTL: delivery.event_type === 'jam_reminder' ? 21600 : 3600,
+          urgency: delivery.event_type === 'jam_reminder' ? 'normal' : 'high',
+        })
+        const { error: finishError } = await admin.rpc('finish_push_delivery', {
+          target_delivery_id: delivery.delivery_id,
+          outcome: 'sent',
+          target_response_status: pushResult.statusCode,
+          target_error: null,
+        })
+        if (finishError) throw finishError
+        result.sent += 1
+      } catch (error: unknown) {
+        const status = errorStatus(error)
+        const outcome = deliveryOutcome(status)
+        const { error: finishError } = await admin.rpc('finish_push_delivery', {
+          target_delivery_id: delivery.delivery_id,
+          outcome,
+          target_response_status: status ?? null,
+          target_error: errorMessage(error),
+        })
+        if (finishError) throw finishError
+        if (willRetry(outcome, delivery.attempt)) result.retried += 1
+        else result.failed += 1
+      }
     }
 
-    return response(request, { ok: true })
+    return jsonResponse({ ok: true, ...result })
   } catch (error: unknown) {
-    console.error('[dispatch-push] Test push failed', error instanceof Error ? error.message : 'Unknown error')
-    return response(request, { error: 'Unable to send test notification' }, 500)
+    console.error('[dispatch-push] Dispatch failed', errorMessage(error))
+    return jsonResponse({ error: 'Unable to dispatch notifications' }, 500)
   }
 })

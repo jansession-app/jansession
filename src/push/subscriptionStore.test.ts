@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   removeDeviceSubscription,
   saveDeviceSubscription,
-  updateDeviceSubscriptionLocale,
+  updateDeviceSubscriptionPreferences,
   type PushSubscriptionInput,
   type PushSubscriptionRecord,
   type PushSubscriptionRepository,
@@ -21,7 +21,7 @@ class MemoryPushRepository implements PushSubscriptionRepository {
     return record
   }
 
-  async update(id: string, userId: string, input: Pick<PushSubscriptionInput, 'p256dh' | 'auth' | 'locale'>) {
+  async update(id: string, userId: string, input: Pick<PushSubscriptionInput, 'p256dh' | 'auth' | 'locale' | 'timezone'>) {
     const index = this.records.findIndex((record) => record.id === id && record.userId === userId)
     if (index < 0) throw new Error('Subscription not found')
     const current = this.records[index]!
@@ -41,6 +41,7 @@ const subscription = (endpoint: string, locale: 'it' | 'en' = 'it'): PushSubscri
   p256dh: `key-${endpoint}`,
   auth: `auth-${endpoint}`,
   locale,
+  timezone: 'Europe/Rome',
 })
 
 describe('push subscription storage', () => {
@@ -70,7 +71,8 @@ describe('push subscription storage', () => {
   it('updates the locale of the current subscription', async () => {
     const repository = new MemoryPushRepository()
     await saveDeviceSubscription(repository, subscription('iphone', 'it'))
-    await updateDeviceSubscriptionLocale(repository, 'user-one', 'iphone', 'en')
+    await updateDeviceSubscriptionPreferences(repository, 'user-one', 'iphone', 'en', 'America/New_York')
     expect(repository.records[0]?.locale).toBe('en')
+    expect(repository.records[0]?.timezone).toBe('America/New_York')
   })
 })
