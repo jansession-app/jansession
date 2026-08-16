@@ -10,9 +10,9 @@ function requireClient() {
 }
 
 export const discoverRepository = {
-  async search(searchText: string, page = 0): Promise<DiscoverJamSummary[]> {
+  async search(candidateId: string, page = 0): Promise<DiscoverJamSummary[]> {
     const { data, error } = await requireClient().rpc('discover_jams', {
-      search_text: searchText.trim(),
+      geocode_candidate_id: candidateId,
       page_offset: Math.max(0, page) * 30,
       page_limit: 30,
     })

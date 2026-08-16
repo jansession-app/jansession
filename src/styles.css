@@ -1184,6 +1184,11 @@ body {
 .discover-open { grid-column: 2; grid-row: 1 / span 2; align-self: center; display: flex; align-items: center; gap: 5px; color: var(--color-accent-strong); font-size: 10px; font-weight: 720; }
 .discover-empty { margin: 26px 0; color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
 .discover-more { width: 100%; margin-top: 20px; }
+.discover-attribution { margin: 18px 0 0; color: var(--ink-soft); font-size: 9px; line-height: 1.45; }
+.discover-attribution a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.place-candidate-list { display: grid; }
+.place-candidate-list button { min-height: 54px; padding: 13px 2px; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--ink); text-align: left; font: inherit; line-height: 1.35; cursor: pointer; }
+.place-candidate-list button:last-child { border-bottom: 0; }
 
 .public-jam-header { padding-bottom: 26px; border-bottom: 1px solid var(--line); }
 .public-jam-header h1 { margin: 0 0 8px; font-size: clamp(2.6rem, 12vw, 4.8rem); line-height: .96; letter-spacing: -.06em; }

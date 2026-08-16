@@ -125,10 +125,15 @@ export const remoteMutations = {
     const { error: slotError } = await client.from('song_role_slots').insert(slots.map((slot) => ({ id: slot.id, song_id: slot.songId, instrument_id: instrumentByName.get(slot.instrument), position: slot.position })))
     if (slotError) throw slotError
   },
-  async addJam(jam: Jam) {
+  async addJam(jam: Jam, publicPlaceCandidateId?: string) {
     const client = requireClient()
+    if (jam.visibility === 'public' && !publicPlaceCandidateId) throw new Error('A verified public place is required.')
     const { error } = await client.from('jams').insert({ id: jam.id, name: jam.name, starts_at: jam.startsAt, location: jam.location ?? null, location_address: jam.locationAddress ?? null, public_area: jam.publicArea ?? null, creator_id: jam.creatorId, visibility: jam.visibility, accepting_members: jam.acceptingMembers, proposals_open: true, assignments_open: true })
     if (error) throw error
+    if (jam.visibility === 'public' && publicPlaceCandidateId) {
+      const { error: placeError } = await client.rpc('set_jam_public_place', { target_jam_id: jam.id, target_public_area: jam.publicArea, target_candidate_id: publicPlaceCandidateId })
+      if (placeError) throw placeError
+    }
     const { error: wantedError } = await client.rpc('set_jam_wanted_instruments', { target_jam_id: jam.id, target_instrument_names: jam.wantedInstruments })
     if (wantedError) throw wantedError
     if (jam.visibility !== 'link') return ''
@@ -153,27 +158,33 @@ export const remoteMutations = {
     const { error } = await requireClient().rpc('move_setlist_item', { target_song_id: songId, direction })
     if (error) throw error
   },
-  async updateJam(jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'publicArea' | 'visibility' | 'acceptingMembers' | 'wantedInstruments' | 'proposalsOpen' | 'assignmentsOpen'>>) {
+  async updateJam(jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'publicArea' | 'visibility' | 'acceptingMembers' | 'wantedInstruments' | 'proposalsOpen' | 'assignmentsOpen'>>, publicPlaceCandidateId?: string) {
+    const client = requireClient()
+    if (changes.visibility === 'public') {
+      if (!changes.publicArea || !publicPlaceCandidateId) throw new Error('A verified public place is required.')
+      const { error: placeError } = await client.rpc('set_jam_public_place', { target_jam_id: jamId, target_public_area: changes.publicArea, target_candidate_id: publicPlaceCandidateId })
+      if (placeError) throw placeError
+    }
     const patch: Record<string, string | boolean | null> = {}
     if (changes.name !== undefined) patch.name = changes.name
     if (changes.startsAt !== undefined) patch.starts_at = changes.startsAt
     if ('location' in changes) patch.location = changes.location ?? null
     if ('locationAddress' in changes) patch.location_address = changes.locationAddress ?? null
-    if ('publicArea' in changes) patch.public_area = changes.publicArea ?? null
+    if ('publicArea' in changes && changes.visibility !== 'public') patch.public_area = changes.publicArea ?? null
     if (changes.visibility !== undefined) patch.visibility = changes.visibility
     if (changes.acceptingMembers !== undefined) patch.accepting_members = changes.acceptingMembers
     if (changes.proposalsOpen !== undefined) patch.proposals_open = changes.proposalsOpen
     if (changes.assignmentsOpen !== undefined) patch.assignments_open = changes.assignmentsOpen
     if (Object.keys(patch).length) {
-      const { error } = await requireClient().from('jams').update(patch).eq('id', jamId)
+      const { error } = await client.from('jams').update(patch).eq('id', jamId)
       if (error) throw error
     }
     if (changes.wantedInstruments !== undefined) {
-      const { error } = await requireClient().rpc('set_jam_wanted_instruments', { target_jam_id: jamId, target_instrument_names: changes.wantedInstruments })
+      const { error } = await client.rpc('set_jam_wanted_instruments', { target_jam_id: jamId, target_instrument_names: changes.wantedInstruments })
       if (error) throw error
     }
     if (changes.visibility === 'link') {
-      const { data, error } = await requireClient().from('jam_invites').select('token').eq('jam_id', jamId).is('revoked_at', null).single()
+      const { data, error } = await client.from('jam_invites').select('token').eq('jam_id', jamId).is('revoked_at', null).single()
       if (error) throw error
       return data.token as string
     }

@@ -23,6 +23,11 @@ interface NewJamInput {
   visibility: Jam['visibility']
   acceptingMembers: boolean
   wantedInstruments: string[]
+  publicPlaceCandidateId?: string
+}
+
+type JamUpdate = Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'publicArea' | 'visibility' | 'acceptingMembers' | 'wantedInstruments' | 'proposalsOpen' | 'assignmentsOpen'>> & {
+  publicPlaceCandidateId?: string
 }
 
 interface NewSongInput {
@@ -47,7 +52,7 @@ interface DataActions {
   removeFromSetlist: (songId: string) => void
   moveSetlist: (songId: string, direction: -1 | 1) => void
   updateProfile: (displayName: string, instruments: string[]) => Promise<boolean>
-  updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'publicArea' | 'visibility' | 'acceptingMembers' | 'wantedInstruments' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
+  updateJam: (jamId: string, changes: JamUpdate) => void
   deleteJam: (jamId: string) => Promise<boolean>
   updateMemberRole: (jamId: string, userId: string, role: JamRole) => Promise<boolean>
   leaveJam: (jamId: string) => Promise<boolean>
@@ -200,9 +205,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     addJam(input) {
       const jamId = id('jam')
       const timestamp = new Date().toISOString()
-      const createdJam: Jam = { id: jamId, ...input, creatorId: data.currentUserId, proposalsOpen: true, assignmentsOpen: true, inviteCode: isDemo ? Math.random().toString(36).slice(2, 8).toUpperCase() : '', createdAt: timestamp }
+      const { publicPlaceCandidateId, ...jamInput } = input
+      const createdJam: Jam = { id: jamId, ...jamInput, creatorId: data.currentUserId, proposalsOpen: true, assignmentsOpen: true, inviteCode: isDemo ? Math.random().toString(36).slice(2, 8).toUpperCase() : '', createdAt: timestamp }
       update((current) => ({ ...current, jams: [...current.jams, createdJam], members: [...current.members, { jamId, userId: current.currentUserId, role: 'organizer', joinedAt: timestamp }] }))
-      runRemote(() => remoteMutations.addJam(createdJam), (inviteCode) => {
+      runRemote(() => remoteMutations.addJam(createdJam, publicPlaceCandidateId), (inviteCode) => {
         if (!inviteCode) return
         update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, inviteCode } : jam) }))
       })
@@ -255,11 +261,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     },
     updateJam(jamId, changes) {
-      runRemote(() => remoteMutations.updateJam(jamId, changes), (inviteCode) => {
+      const { publicPlaceCandidateId, ...jamChanges } = changes
+      runRemote(() => remoteMutations.updateJam(jamId, jamChanges, publicPlaceCandidateId), (inviteCode) => {
         if (!inviteCode) return
         update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, inviteCode } : jam) }))
       })
-      update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, ...changes, inviteCode: changes.visibility && changes.visibility !== 'link' ? '' : jam.inviteCode } : jam) }))
+      update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, ...jamChanges, inviteCode: jamChanges.visibility && jamChanges.visibility !== 'link' ? '' : jam.inviteCode } : jam) }))
     },
     async deleteJam(jamId) {
       const jam = data.jams.find((item) => item.id === jamId)

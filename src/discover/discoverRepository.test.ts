@@ -11,6 +11,7 @@ const publicRow = {
   song_count: 5,
   wanted_instruments: ['Batteria', 'Basso'],
   request_status: 'pending',
+  distance_meters: '37123',
 }
 
 describe('Discover DTO mapping', () => {
@@ -35,6 +36,7 @@ describe('Discover DTO mapping', () => {
       songCount: 5,
       wantedInstruments: ['Batteria', 'Basso'],
       requestStatus: 'pending',
+      distanceMeters: 37123,
     })
     expect(mapped).not.toHaveProperty('location')
     expect(mapped).not.toHaveProperty('locationAddress')

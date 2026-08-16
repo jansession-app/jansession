@@ -10,6 +10,12 @@ export interface DiscoverJamSummary {
   songCount: number
   wantedInstruments: string[]
   requestStatus: JoinRequestStatus | null
+  distanceMeters: number
+}
+
+export interface GeocodeCandidate {
+  candidateId: string
+  displayName: string
 }
 
 export interface PublicJamSong {

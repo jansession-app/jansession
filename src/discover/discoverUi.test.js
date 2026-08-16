@@ -15,6 +15,8 @@ describe('Discover UI architecture', () => {
 
   it('provides search, a distinct public detail and join request states', () => {
     expect(discoverPage).toContain("discoverRepository.search")
+    expect(discoverPage).toContain('geocodePlace(query, language)')
+    expect(repository).toContain('geocode_candidate_id: candidateId')
     expect(detailPage).toContain('discoverRepository.getPublicJam')
     expect(detailPage).toContain('discoverRepository.requestToJoin')
     expect(detailPage).toContain("requestStatus === 'accepted'")

@@ -10,6 +10,7 @@ export type DiscoverJamRow = {
   song_count: number | string
   wanted_instruments: string[] | null
   request_status: string | null
+  distance_meters?: number | string
 }
 
 export type PublicJamRow = DiscoverJamRow & { public_songs: unknown }
@@ -29,6 +30,7 @@ export function mapDiscoverJamRow(row: DiscoverJamRow): DiscoverJamSummary {
     songCount: Number(row.song_count),
     wantedInstruments: row.wanted_instruments ?? [],
     requestStatus: joinRequestStatus(row.request_status),
+    distanceMeters: Number(row.distance_meters ?? 0),
   }
 }
 

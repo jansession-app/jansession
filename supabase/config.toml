@@ -16,3 +16,6 @@ enable_confirmations = true
 
 [functions.dispatch-push]
 verify_jwt = false
+
+[functions.geocode-place]
+verify_jwt = true
