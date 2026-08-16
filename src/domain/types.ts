@@ -20,8 +20,11 @@ export interface Jam {
   startsAt: string
   location?: string
   locationAddress?: string
+  publicArea?: string
   creatorId: string
   visibility: JamVisibility
+  acceptingMembers: boolean
+  wantedInstruments: string[]
   proposalsOpen: boolean
   assignmentsOpen: boolean
   inviteCode: string

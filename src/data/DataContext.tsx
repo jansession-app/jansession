@@ -19,7 +19,10 @@ interface NewJamInput {
   startsAt: string
   location?: string
   locationAddress?: string
-  visibility: 'private' | 'link'
+  publicArea?: string
+  visibility: Jam['visibility']
+  acceptingMembers: boolean
+  wantedInstruments: string[]
 }
 
 interface NewSongInput {
@@ -44,7 +47,7 @@ interface DataActions {
   removeFromSetlist: (songId: string) => void
   moveSetlist: (songId: string, direction: -1 | 1) => void
   updateProfile: (displayName: string, instruments: string[]) => Promise<boolean>
-  updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
+  updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'publicArea' | 'visibility' | 'acceptingMembers' | 'wantedInstruments' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
   deleteJam: (jamId: string) => Promise<boolean>
   updateMemberRole: (jamId: string, userId: string, role: JamRole) => Promise<boolean>
   leaveJam: (jamId: string) => Promise<boolean>
@@ -67,7 +70,16 @@ const DataContext = createContext<DataContextValue | null>(null)
 function readInitialData(): AppData {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY)
-    return stored ? (JSON.parse(stored) as AppData) : createDemoData()
+    if (!stored) return createDemoData()
+    const parsed = JSON.parse(stored) as AppData
+    return {
+      ...parsed,
+      jams: parsed.jams.map((jam) => ({
+        ...jam,
+        acceptingMembers: jam.acceptingMembers ?? true,
+        wantedInstruments: jam.wantedInstruments ?? [],
+      })),
+    }
   } catch {
     return createDemoData()
   }
@@ -243,8 +255,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     },
     updateJam(jamId, changes) {
-      runRemote(() => remoteMutations.updateJam(jamId, changes))
-      update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, ...changes } : jam) }))
+      runRemote(() => remoteMutations.updateJam(jamId, changes), (inviteCode) => {
+        if (!inviteCode) return
+        update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, inviteCode } : jam) }))
+      })
+      update((current) => ({ ...current, jams: current.jams.map((jam) => jam.id === jamId ? { ...jam, ...changes, inviteCode: changes.visibility && changes.visibility !== 'link' ? '' : jam.inviteCode } : jam) }))
     },
     async deleteJam(jamId) {
       const jam = data.jams.find((item) => item.id === jamId)

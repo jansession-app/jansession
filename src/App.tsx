@@ -13,6 +13,8 @@ import { ProfilePage } from './pages/ProfilePage'
 import { ProposeSongPage } from './pages/ProposeSongPage'
 import { SetlistPage } from './pages/SetlistPage'
 import { SongDetailPage } from './pages/SongDetailPage'
+import { DiscoverPage } from './pages/DiscoverPage'
+import { PublicJamPage } from './pages/PublicJamPage'
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="jams" element={<HomePage />} />
         <Route path="home" element={<Navigate to="/jams" replace />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="discover" element={<DiscoverPage />} />
+        <Route path="discover/jam/:jamId" element={<PublicJamPage />} />
         <Route path="join/:inviteCode" element={<JoinPage />} />
         <Route path="jam/new" element={<NewJamPage />} />
         <Route path="jam/:jamId" element={<JamShell />}>

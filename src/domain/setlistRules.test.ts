@@ -8,7 +8,7 @@ function dataFor(role: 'organizer' | 'co-organizer' | 'musician', preparation?: 
   return {
     currentUserId: 'me',
     profiles: [],
-    jams: [{ id: 'jam', name: 'Jam', startsAt: '', creatorId: 'me', visibility: 'private', proposalsOpen: true, assignmentsOpen: true, inviteCode: '', createdAt: '' }],
+    jams: [{ id: 'jam', name: 'Jam', startsAt: '', creatorId: 'me', visibility: 'private', acceptingMembers: true, wantedInstruments: [], proposalsOpen: true, assignmentsOpen: true, inviteCode: '', createdAt: '' }],
     members: [{ jamId: 'jam', userId: 'me', role, joinedAt: '' }],
     songs: [{ id: 'song', jamId: 'jam', proposerId: 'me', title: 'Song', artist: 'Artist', createdAt: '', updatedAt: '' }],
     slots: [{ id: 'slot', songId: 'song', instrument: 'Chitarra', position: 1 }],

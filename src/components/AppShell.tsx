@@ -1,4 +1,4 @@
-import { CalendarRange, UserRound } from 'lucide-react'
+import { CalendarRange, Compass, UserRound } from 'lucide-react'
 import { forwardRef, useEffect, useRef, type ReactNode } from 'react'
 import { AnimatePresence, LayoutGroup, motion, useIsPresent, useReducedMotion } from 'motion/react'
 import { Link, Navigate, Outlet, useLocation, useOutlet, useParams } from 'react-router-dom'
@@ -77,14 +77,15 @@ const RouteLayer = forwardRef<HTMLDivElement, { children: ReactNode; direction: 
 function GlobalNavigation({ pathname }: { pathname: string }) {
   const { t } = useI18n()
   const activeArea = activeGlobalNavigation(pathname)
-  const icons = { jams: CalendarRange, profile: UserRound }
+  const icons = { jams: CalendarRange, discover: Compass, profile: UserRound }
+  const labels = { jams: 'navigation.jams', discover: 'navigation.discover', profile: 'navigation.profile' } as const
   return <nav className="bottom-nav" aria-label={t('navigation.mainAria')}>{GLOBAL_NAVIGATION.map(({ key, to }) => {
     const Icon = icons[key]
     const active = activeArea === key
     return <Link key={key} to={to} className={active ? 'active' : ''} aria-current={active ? 'page' : undefined}>
       {active && <motion.span className="bottom-nav-indicator" layoutId="global-navigation-indicator" transition={{ type: 'spring', stiffness: 440, damping: 34, mass: 0.7 }} />}
       <span className="bottom-nav-icon"><Icon size={20} strokeWidth={2} aria-hidden="true" /></span>
-      <span className="bottom-nav-label">{t(key === 'jams' ? 'navigation.jams' : 'navigation.profile')}</span>
+      <span className="bottom-nav-label">{t(labels[key])}</span>
     </Link>
   })}</nav>
 }

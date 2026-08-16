@@ -1,8 +1,9 @@
-import { Trash2 } from 'lucide-react'
+import { Globe2, Link2, Lock, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ConfirmSheet } from '../components/ConfirmSheet'
+import { WantedInstrumentsField } from '../components/WantedInstrumentsField'
 import { useData } from '../data/DataContext'
 import { canDeleteJam } from '../data/jamDeletion'
 import { JamOverviewLink } from '../components/JamOverviewLink'
@@ -18,6 +19,10 @@ export function JamSettingsPage() {
   const [startsAt, setStartsAt] = useState(jam ? new Date(new Date(jam.startsAt).getTime() - new Date(jam.startsAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '')
   const [location, setLocation] = useState(jam?.location ?? '')
   const [locationAddress, setLocationAddress] = useState(jam?.locationAddress ?? '')
+  const [publicArea, setPublicArea] = useState(jam?.publicArea ?? '')
+  const [visibility, setVisibility] = useState(jam?.visibility ?? 'link')
+  const [acceptingMembers, setAcceptingMembers] = useState(jam?.acceptingMembers ?? true)
+  const [wantedInstruments, setWantedInstruments] = useState<string[]>(jam?.wantedInstruments ?? [])
   const [proposalsOpen, setProposalsOpen] = useState(jam?.proposalsOpen ?? true)
   const [assignmentsOpen, setAssignmentsOpen] = useState(jam?.assignmentsOpen ?? true)
   const [deleting, setDeleting] = useState(false)
@@ -30,7 +35,7 @@ export function JamSettingsPage() {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     if (!manager) return
-    actions.updateJam(jamId, { name: name.trim(), startsAt: new Date(startsAt).toISOString(), location: location.trim() || undefined, locationAddress: locationAddress.trim() || undefined, proposalsOpen, assignmentsOpen })
+    actions.updateJam(jamId, { name: name.trim(), startsAt: new Date(startsAt).toISOString(), location: location.trim() || undefined, locationAddress: locationAddress.trim() || undefined, publicArea: publicArea.trim() || undefined, visibility, acceptingMembers, wantedInstruments, proposalsOpen, assignmentsOpen })
     navigate(`/jam/${jamId}/musicians`)
   }
   const removeJam = async () => {
@@ -57,6 +62,16 @@ export function JamSettingsPage() {
         <label className="setting-toggle"><strong>{t('settings.songProposals')}</strong><span className="toggle-control"><input type="checkbox" disabled={!manager} checked={proposalsOpen} onChange={(event) => setProposalsOpen(event.target.checked)} /><span aria-hidden="true" /></span></label>
         <label className="setting-toggle"><strong>{t('settings.assignments')}</strong><span className="toggle-control"><input type="checkbox" disabled={!manager} checked={assignmentsOpen} onChange={(event) => setAssignmentsOpen(event.target.checked)} /><span aria-hidden="true" /></span></label>
       </fieldset></section>
+      <section className="form-section"><h2>{t('newJam.access')}</h2><fieldset className="visibility-field" disabled={!manager}><legend className="sr-only">{t('newJam.access')}</legend>
+        <motion.button type="button" className={visibility === 'private' ? 'active' : ''} onClick={() => setVisibility('private')}><Lock size={19} /><span><strong>{t('newJam.private')}</strong><small>{t('newJam.privateHelp')}</small></span></motion.button>
+        <motion.button type="button" className={visibility === 'link' ? 'active' : ''} onClick={() => setVisibility('link')}><Link2 size={19} /><span><strong>{t('newJam.withLink')}</strong><small>{t('newJam.withLinkHelp')}</small></span></motion.button>
+        <motion.button type="button" className={visibility === 'public' ? 'active' : ''} onClick={() => setVisibility('public')}><Globe2 size={19} /><span><strong>{t('newJam.public')}</strong><small>{t('newJam.publicHelp')}</small></span></motion.button>
+      </fieldset></section>
+      {visibility === 'public' && <motion.section className="form-section discover-settings-section" initial={{ y: 10 }} animate={{ y: 0 }}><h2>{t('discover.settingsTitle')}</h2>
+        <label className="field"><span>{t('discover.publicArea')}</span><input required minLength={2} maxLength={180} readOnly={!manager} value={publicArea} onChange={(event) => setPublicArea(event.target.value)} placeholder={t('discover.publicAreaPlaceholder')} /></label>
+        <WantedInstrumentsField value={wantedInstruments} onChange={setWantedInstruments} disabled={!manager} />
+        <label className="setting-toggle"><strong>{t('discover.acceptRequests')}</strong><span className="toggle-control"><input type="checkbox" disabled={!manager} checked={acceptingMembers} onChange={(event) => setAcceptingMembers(event.target.checked)} /><span aria-hidden="true" /></span></label>
+      </motion.section>}
       {manager && <button className="primary-button full-button">{t('settings.save')}</button>}
     </form>
     {owner && <section className="jam-delete-section"><button className="delete-jam-action" type="button" disabled={deleting} onClick={() => setDeleteSheetOpen(true)}><Trash2 size={16} /> {t('settings.delete')}</button></section>}

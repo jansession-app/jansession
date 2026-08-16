@@ -1,5 +1,6 @@
 export const GLOBAL_NAVIGATION = [
   { key: 'jams', to: '/jams' },
+  { key: 'discover', to: '/discover' },
   { key: 'profile', to: '/profile' },
 ] as const
 
@@ -31,5 +32,7 @@ export function jamIdFromRoute(pathname: string): string | null {
 }
 
 export function activeGlobalNavigation(pathname: string): GlobalNavigationKey {
-  return pathname === '/profile' ? 'profile' : 'jams'
+  if (pathname === '/profile') return 'profile'
+  if (pathname.startsWith('/discover')) return 'discover'
+  return 'jams'
 }

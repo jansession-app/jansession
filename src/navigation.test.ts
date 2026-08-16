@@ -2,15 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { activeGlobalNavigation, GLOBAL_NAVIGATION, jamIdFromRoute, jamRoutes, joinedJamRoute } from './navigation'
 
 describe('global navigation', () => {
-  it('contains only the global jams and profile destinations', () => {
+  it('contains the global jams, discover and profile destinations', () => {
     expect(GLOBAL_NAVIGATION).toEqual([
       { key: 'jams', to: '/jams' },
+      { key: 'discover', to: '/discover' },
       { key: 'profile', to: '/profile' },
     ])
   })
 
   it('keeps Profilo global and never resolves a jam section from prior state', () => {
     expect(activeGlobalNavigation('/profile')).toBe('profile')
+    expect(activeGlobalNavigation('/discover')).toBe('discover')
+    expect(activeGlobalNavigation('/discover/jam/public-one')).toBe('discover')
     expect(activeGlobalNavigation('/jams')).toBe('jams')
     expect(activeGlobalNavigation('/jam/jam-one/songs')).toBe('jams')
     expect(GLOBAL_NAVIGATION.find((item) => item.key === 'jams')?.to).toBe('/jams')

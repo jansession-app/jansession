@@ -1,8 +1,9 @@
-import { Lock, Link2 } from 'lucide-react'
+import { Globe2, Lock, Link2 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BackControl } from '../components/BackControl'
+import { WantedInstrumentsField } from '../components/WantedInstrumentsField'
 import { useData } from '../data/DataContext'
 import { jamRoutes } from '../navigation'
 import { useI18n } from '../i18n/LanguageContext'
@@ -14,12 +15,15 @@ export function NewJamPage() {
   const [startsAt, setStartsAt] = useState('2026-08-22T20:30')
   const [location, setLocation] = useState('')
   const [locationAddress, setLocationAddress] = useState('')
-  const [visibility, setVisibility] = useState<'private' | 'link'>('link')
+  const [publicArea, setPublicArea] = useState('')
+  const [visibility, setVisibility] = useState<'private' | 'link' | 'public'>('link')
+  const [acceptingMembers, setAcceptingMembers] = useState(true)
+  const [wantedInstruments, setWantedInstruments] = useState<string[]>([])
   const reduceMotion = useReducedMotion()
   const { t } = useI18n()
   const submit = (event: FormEvent) => {
     event.preventDefault()
-    const id = actions.addJam({ name: name.trim(), startsAt: new Date(startsAt).toISOString(), location: location.trim() || undefined, locationAddress: locationAddress.trim() || undefined, visibility })
+    const id = actions.addJam({ name: name.trim(), startsAt: new Date(startsAt).toISOString(), location: location.trim() || undefined, locationAddress: locationAddress.trim() || undefined, publicArea: publicArea.trim() || undefined, visibility, acceptingMembers, wantedInstruments })
     navigate(jamRoutes(id).overview)
   }
   return (
@@ -35,7 +39,14 @@ export function NewJamPage() {
           <section className="form-section"><h2>{t('newJam.access')}</h2><fieldset className="visibility-field"><legend className="sr-only">{t('newJam.access')}</legend>
             <motion.button whileTap={reduceMotion ? undefined : { scale: 0.97 }} type="button" className={visibility === 'private' ? 'active' : ''} onClick={() => setVisibility('private')}><Lock size={19} /><span><strong>{t('newJam.private')}</strong><small>{t('newJam.privateHelp')}</small></span></motion.button>
             <motion.button whileTap={reduceMotion ? undefined : { scale: 0.97 }} type="button" className={visibility === 'link' ? 'active' : ''} onClick={() => setVisibility('link')}><Link2 size={19} /><span><strong>{t('newJam.withLink')}</strong><small>{t('newJam.withLinkHelp')}</small></span></motion.button>
+            <motion.button whileTap={reduceMotion ? undefined : { scale: 0.97 }} type="button" className={visibility === 'public' ? 'active' : ''} onClick={() => setVisibility('public')}><Globe2 size={19} /><span><strong>{t('newJam.public')}</strong><small>{t('newJam.publicHelp')}</small></span></motion.button>
           </fieldset></section>
+          {visibility === 'public' && <motion.section className="form-section discover-settings-section" initial={{ y: 10 }} animate={{ y: 0 }}>
+            <h2>{t('discover.settingsTitle')}</h2>
+            <label className="field"><span>{t('discover.publicArea')}</span><input required minLength={2} maxLength={180} value={publicArea} onChange={(event) => setPublicArea(event.target.value)} placeholder={t('discover.publicAreaPlaceholder')} /></label>
+            <WantedInstrumentsField value={wantedInstruments} onChange={setWantedInstruments} />
+            <label className="setting-toggle"><strong>{t('discover.acceptRequests')}</strong><span className="toggle-control"><input type="checkbox" checked={acceptingMembers} onChange={(event) => setAcceptingMembers(event.target.checked)} /><span aria-hidden="true" /></span></label>
+          </motion.section>}
           <button className="primary-button full-button" type="submit">{t('newJam.create')}</button>
         </form>
       </main>

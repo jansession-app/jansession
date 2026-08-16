@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { readInviteToken, type InviteTokenRelation } from '../invites/inviteFlow'
 
 type ProfileRow = { id: string; display_name: string | null; onboarding_completed: boolean; profile_instruments: { instruments: { name: string } | null }[] }
-type JamRow = { id: string; name: string; starts_at: string; location: string | null; location_address: string | null; creator_id: string; visibility: Jam['visibility']; proposals_open: boolean; assignments_open: boolean; created_at: string; jam_invites: InviteTokenRelation }
+type JamRow = { id: string; name: string; starts_at: string; location: string | null; location_address: string | null; public_area: string | null; creator_id: string; visibility: Jam['visibility']; accepting_members: boolean; proposals_open: boolean; assignments_open: boolean; created_at: string; jam_invites: InviteTokenRelation; jam_wanted_instruments: { instruments: { name: string } | null }[] }
 type MemberRow = { jam_id: string; user_id: string; role: JamMember['role']; joined_at: string }
 type SongRow = { id: string; jam_id: string; proposer_id: string; title: string; artist: string; listening_url: string | null; bpm: number | null; musical_key: string | null; notes: string | null; created_at: string; updated_at: string }
 type SlotRow = { id: string; song_id: string; instrument_id: string; position: number; instruments: { name: string } | null }
@@ -22,7 +22,7 @@ export async function loadSupabaseData(currentUserId: string): Promise<AppData> 
   const client = requireClient()
   const [profilesResult, jamsResult, membersResult, songsResult, slotsResult, assignmentsResult, volunteersResult, preparationsResult, setlistResult] = await Promise.all([
     client.from('profiles').select('id, display_name, onboarding_completed, profile_instruments(instruments(name))'),
-    client.from('jams').select('id, name, starts_at, location, location_address, creator_id, visibility, proposals_open, assignments_open, created_at, jam_invites(token)'),
+    client.from('jams').select('id, name, starts_at, location, location_address, public_area, creator_id, visibility, accepting_members, proposals_open, assignments_open, created_at, jam_invites(token), jam_wanted_instruments(instruments(name))'),
     client.from('jam_members').select('jam_id, user_id, role, joined_at'),
     client.from('songs').select('*'),
     client.from('song_role_slots').select('id, song_id, instrument_id, position, instruments(name)'),
@@ -41,7 +41,10 @@ export async function loadSupabaseData(currentUserId: string): Promise<AppData> 
   const jams: Jam[] = (jamsResult.data as unknown as JamRow[]).map((row) => ({
     id: row.id, name: row.name, startsAt: row.starts_at, location: row.location ?? undefined,
     locationAddress: row.location_address ?? undefined,
-    creatorId: row.creator_id, visibility: row.visibility, proposalsOpen: row.proposals_open,
+    publicArea: row.public_area ?? undefined,
+    creatorId: row.creator_id, visibility: row.visibility, acceptingMembers: row.accepting_members,
+    wantedInstruments: row.jam_wanted_instruments.flatMap((item) => item.instruments?.name ? [item.instruments.name] : []),
+    proposalsOpen: row.proposals_open,
     assignmentsOpen: row.assignments_open, inviteCode: readInviteToken(row.jam_invites), createdAt: row.created_at,
   }))
   const members: JamMember[] = (membersResult.data as MemberRow[]).map((row) => ({ jamId: row.jam_id, userId: row.user_id, role: row.role, joinedAt: row.joined_at }))
@@ -124,8 +127,10 @@ export const remoteMutations = {
   },
   async addJam(jam: Jam) {
     const client = requireClient()
-    const { error } = await client.from('jams').insert({ id: jam.id, name: jam.name, starts_at: jam.startsAt, location: jam.location ?? null, location_address: jam.locationAddress ?? null, creator_id: jam.creatorId, visibility: jam.visibility, proposals_open: true, assignments_open: true })
+    const { error } = await client.from('jams').insert({ id: jam.id, name: jam.name, starts_at: jam.startsAt, location: jam.location ?? null, location_address: jam.locationAddress ?? null, public_area: jam.publicArea ?? null, creator_id: jam.creatorId, visibility: jam.visibility, accepting_members: jam.acceptingMembers, proposals_open: true, assignments_open: true })
     if (error) throw error
+    const { error: wantedError } = await client.rpc('set_jam_wanted_instruments', { target_jam_id: jam.id, target_instrument_names: jam.wantedInstruments })
+    if (wantedError) throw wantedError
     if (jam.visibility !== 'link') return ''
     const { data, error: inviteError } = await client.from('jam_invites').select('token').eq('jam_id', jam.id).single()
     if (inviteError) throw inviteError
@@ -148,16 +153,31 @@ export const remoteMutations = {
     const { error } = await requireClient().rpc('move_setlist_item', { target_song_id: songId, direction })
     if (error) throw error
   },
-  async updateJam(jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'proposalsOpen' | 'assignmentsOpen'>>) {
+  async updateJam(jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'publicArea' | 'visibility' | 'acceptingMembers' | 'wantedInstruments' | 'proposalsOpen' | 'assignmentsOpen'>>) {
     const patch: Record<string, string | boolean | null> = {}
     if (changes.name !== undefined) patch.name = changes.name
     if (changes.startsAt !== undefined) patch.starts_at = changes.startsAt
     if ('location' in changes) patch.location = changes.location ?? null
     if ('locationAddress' in changes) patch.location_address = changes.locationAddress ?? null
+    if ('publicArea' in changes) patch.public_area = changes.publicArea ?? null
+    if (changes.visibility !== undefined) patch.visibility = changes.visibility
+    if (changes.acceptingMembers !== undefined) patch.accepting_members = changes.acceptingMembers
     if (changes.proposalsOpen !== undefined) patch.proposals_open = changes.proposalsOpen
     if (changes.assignmentsOpen !== undefined) patch.assignments_open = changes.assignmentsOpen
-    const { error } = await requireClient().from('jams').update(patch).eq('id', jamId)
-    if (error) throw error
+    if (Object.keys(patch).length) {
+      const { error } = await requireClient().from('jams').update(patch).eq('id', jamId)
+      if (error) throw error
+    }
+    if (changes.wantedInstruments !== undefined) {
+      const { error } = await requireClient().rpc('set_jam_wanted_instruments', { target_jam_id: jamId, target_instrument_names: changes.wantedInstruments })
+      if (error) throw error
+    }
+    if (changes.visibility === 'link') {
+      const { data, error } = await requireClient().from('jam_invites').select('token').eq('jam_id', jamId).is('revoked_at', null).single()
+      if (error) throw error
+      return data.token as string
+    }
+    return ''
   },
   async deleteJam(jamId: string) {
     const { error, count } = await requireClient().from('jams').delete({ count: 'exact' }).eq('id', jamId)

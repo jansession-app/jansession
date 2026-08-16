@@ -8,6 +8,8 @@ const baseJam: Jam = {
   startsAt: '2026-08-22T20:30:00+02:00',
   creatorId: 'user-one',
   visibility: 'link',
+  acceptingMembers: true,
+  wantedInstruments: [],
   proposalsOpen: true,
   assignmentsOpen: true,
   inviteCode: 'ABC123',

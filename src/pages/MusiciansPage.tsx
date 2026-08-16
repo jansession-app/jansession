@@ -13,10 +13,11 @@ import { useI18n } from '../i18n/LanguageContext'
 import type { TranslationKey } from '../i18n/translations'
 import { displayInstrument } from '../domain/songStatus'
 import { JAM_ROLE_LABEL_KEYS } from '../domain/labels'
+import { JoinRequestsSection } from '../discover/JoinRequestsSection'
 
 export function MusiciansPage() {
   const { jamId = '' } = useParams()
-  const { data, actions } = useData()
+  const { data, actions, mode } = useData()
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
   const [inviteError, setInviteError] = useState<TranslationKey | null>(null)
@@ -92,6 +93,8 @@ export function MusiciansPage() {
       </motion.section>}
 
       {manager && <section className="management-card"><div><Settings2 size={20} /><span><strong>{t('musicians.management')}</strong><small>{t('musicians.managementSummary', { proposals: t(jam.proposalsOpen ? 'musicians.open' : 'musicians.closed'), assignments: t(jam.assignmentsOpen ? 'musicians.open' : 'musicians.closed') })}</small></span></div><Link className="secondary-button" to={`/jam/${jamId}/settings`}>{t('common.edit')}</Link></section>}
+
+      {manager && mode === 'supabase' && <JoinRequestsSection jamId={jamId} />}
 
       <motion.div className="musician-list" layout>
         <AnimatePresence initial={false}>{members.map((member) => {
