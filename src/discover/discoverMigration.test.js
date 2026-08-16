@@ -5,6 +5,10 @@ const migration = readFileSync(
   new URL('../../supabase/migrations/202608160013_add_discover.sql', import.meta.url),
   'utf8',
 )
+const paginationFixMigration = readFileSync(
+  new URL('../../supabase/migrations/202608160014_fix_discover_pagination.sql', import.meta.url),
+  'utf8',
+)
 
 function functionSql(name) {
   const start = migration.indexOf(`create function public.${name}`)
@@ -53,11 +57,12 @@ describe('Discover database migration', () => {
   })
 
   it('filters public, future jams and searches public_area case-insensitively with capped pagination', () => {
-    const sql = functionSql('discover_jams')
+    const sql = paginationFixMigration
     expect(sql).toContain("jam.visibility = 'public'::public.jam_visibility")
     expect(sql).toContain('jam.starts_at > pg_catalog.now()')
     expect(sql).toContain('pg_catalog.lower(jam.public_area) like')
-    expect(sql).toContain('pg_catalog.least(page_limit, 30)')
+    expect(sql).toContain('GREATEST(1, LEAST(page_limit, 30))')
+    expect(sql).not.toMatch(/pg_catalog\.(?:greatest|least)\s*\(/i)
     expect(sql).toContain('pg_catalog.char_length(normalized_search) < 2')
     expect(sql).toContain('order by jam.starts_at asc')
   })
