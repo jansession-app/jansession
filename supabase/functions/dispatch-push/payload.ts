@@ -8,6 +8,8 @@ export type PushEventType =
   | 'jam_updated'
   | 'jam_reminder'
   | 'song_incomplete'
+  | 'join_request_created'
+  | 'join_request_accepted'
 
 export interface PushEventDelivery {
   eventId: string
@@ -168,6 +170,21 @@ export function createPushPayload(delivery: PushEventDelivery): PushPayload {
         ? `“${songTitle}” non è più completa: manca ${instrument}.`
         : `“${songTitle}” is no longer complete: ${instrument} is missing.`
       break
+    case 'join_request_created': {
+      const jamName = text(payload, 'jamName')
+      const requesterDisplayName = text(payload, 'requesterDisplayName')
+      body = locale === 'it'
+        ? `${requesterDisplayName} ha chiesto di partecipare a “${jamName}”.`
+        : `${requesterDisplayName} requested to join “${jamName}”.`
+      break
+    }
+    case 'join_request_accepted': {
+      const jamName = text(payload, 'jamName')
+      body = locale === 'it'
+        ? `La tua richiesta per “${jamName}” è stata accettata.`
+        : `Your request to join “${jamName}” was accepted.`
+      break
+    }
   }
 
   return {

@@ -71,6 +71,28 @@ describe('automatic push payloads', () => {
       .toBe('“Everlong” is no longer complete: Guitar is missing.')
   })
 
+  it('localizes new join requests and keeps the manager deep link', () => {
+    const payload = { jamName: 'Sunday Jam', requesterDisplayName: 'Gian', requestId: 'request-one' }
+    const targetPath = '/jansession/#/jam/jam-one/musicians'
+    expect(createPushPayload({ ...base, targetPath, eventType: 'join_request_created', locale: 'it', payload })).toMatchObject({
+      body: 'Gian ha chiesto di partecipare a “Sunday Jam”.',
+      url: targetPath,
+    })
+    expect(createPushPayload({ ...base, targetPath, eventType: 'join_request_created', locale: 'en', payload }).body)
+      .toBe('Gian requested to join “Sunday Jam”.')
+  })
+
+  it('localizes accepted join requests and keeps the requester deep link', () => {
+    const payload = { jamName: 'Sunday Jam', requestId: 'request-one' }
+    const targetPath = '/jansession/#/jam/jam-one'
+    expect(createPushPayload({ ...base, targetPath, eventType: 'join_request_accepted', locale: 'it', payload })).toMatchObject({
+      body: 'La tua richiesta per “Sunday Jam” è stata accettata.',
+      url: targetPath,
+    })
+    expect(createPushPayload({ ...base, targetPath, eventType: 'join_request_accepted', locale: 'en', payload }).body)
+      .toBe('Your request to join “Sunday Jam” was accepted.')
+  })
+
   it('keeps a stable tag and the event deep link across retries', () => {
     const input = { ...base, eventType: 'setlist_added' as const, locale: 'it' as const, payload: { songTitle: 'Everlong' } }
     const first = createPushPayload(input)
