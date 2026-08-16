@@ -6,15 +6,15 @@ import { JamOverviewLink } from '../components/JamOverviewLink'
 import { SongCard } from '../components/SongCard'
 import { useData } from '../data/DataContext'
 import { jamSongs } from '../data/selectors'
-import type { SongStatus } from '../domain/types'
+import type { VisibleSongStatus } from '../domain/statusPresentation'
+import { visibleSongStatus } from '../domain/statusPresentation'
 import { useI18n } from '../i18n/LanguageContext'
 import type { TranslationKey } from '../i18n/translations'
 
 const MotionLink = motion.create(Link)
 
-const GROUPS: { status: SongStatus; titleKey: TranslationKey }[] = [
+const GROUPS: { status: VisibleSongStatus; titleKey: TranslationKey }[] = [
   { status: 'READY', titleKey: 'songs.group.ready' },
-  { status: 'PLAYABLE', titleKey: 'songs.group.playable' },
   { status: 'TO_PREPARE', titleKey: 'songs.group.toPrepare' },
   { status: 'INCOMPLETE', titleKey: 'songs.group.incomplete' },
 ]
@@ -27,19 +27,19 @@ export function JamSongsPage() {
   const jam = data.jams.find((item) => item.id === jamId)
   if (!jam) return null
   const songs = jamSongs(data, jamId)
-  const playableCount = songs.filter(({ details }) => details.status === 'READY' || details.status === 'PLAYABLE').length
+  const readyCount = songs.filter(({ details }) => details.status === 'READY').length
 
   return (
     <main className="page jam-page app-screen">
       <motion.header className="tab-header jam-hero jam-section-header" layoutId={`jam-section-${jamId}-songs`} transition={{ type: 'spring', stiffness: 370, damping: 34 }}>
         <JamOverviewLink jamId={jamId} jamName={jam.name} />
         <div className="section-title-row"><h1>{t('songs.title')}</h1><span>{songs.length}</span></div>
-        {playableCount > 0 && <p className="section-compact-meta">{t(playableCount === 1 ? 'songs.playableOne' : 'songs.playableMany', { count: playableCount })}</p>}
+        {readyCount > 0 && <p className="section-compact-meta">{t(readyCount === 1 ? 'songs.readyOne' : 'songs.readyMany', { count: readyCount })}</p>}
       </motion.header>
 
       <div className="jam-content">
         {songs.length ? <AnimatePresence initial={false}>{GROUPS.map((group) => {
-          const grouped = songs.filter(({ details }) => details.status === group.status)
+          const grouped = songs.filter(({ details }) => visibleSongStatus(details.status) === group.status)
           if (!grouped.length) return null
           return (
             <motion.section className="song-group" key={group.status} layout transition={{ type: 'spring', stiffness: 390, damping: 35 }}>

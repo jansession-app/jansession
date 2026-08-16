@@ -1,25 +1,11 @@
 import type { TranslationKey } from '../i18n/translations'
-import type { PreparationState, SongStatus } from './types'
+import type { SongStatus } from './types'
 
 export const STATUS_LABEL_KEYS: Record<SongStatus, TranslationKey> = {
   READY: 'status.ready',
-  PLAYABLE: 'status.playable',
+  PLAYABLE: 'status.toPrepare',
   TO_PREPARE: 'status.toPrepare',
   INCOMPLETE: 'status.incomplete',
-}
-
-export const PREPARATION_LABEL_KEYS: Record<PreparationState, TranslationKey> = {
-  UNKNOWN: 'preparation.unknown',
-  NEEDS_LISTENING: 'preparation.needsListening',
-  KNOWS_STRUCTURE: 'preparation.knowsStructure',
-  READY: 'preparation.ready',
-}
-
-export const PREPARATION_HELP_KEYS: Record<PreparationState, TranslationKey> = {
-  UNKNOWN: 'preparation.help.unknown',
-  NEEDS_LISTENING: 'preparation.help.needsListening',
-  KNOWS_STRUCTURE: 'preparation.help.knowsStructure',
-  READY: 'preparation.help.ready',
 }
 
 export const JAM_ROLE_LABEL_KEYS = {

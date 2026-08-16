@@ -12,6 +12,7 @@ import { useI18n } from '../i18n/LanguageContext'
 import type { TranslationKey } from '../i18n/translations'
 import { displayInstrument } from '../domain/songStatus'
 import { PushNotificationsSection } from '../push/PushNotificationsSection'
+import { canCompleteOnboarding, completeOnboarding, isProfileComplete, isValidDisplayName } from '../domain/profileOnboarding'
 
 const MIN_PASSWORD_LENGTH = 6
 
@@ -19,8 +20,11 @@ export function ProfilePage() {
   const { data, actions, mode } = useData()
   const navigate = useNavigate()
   const profile = data.profiles.find((item) => item.id === data.currentUserId)
-  const [name, setName] = useState(profile?.displayName ?? '')
+  const onboarding = mode === 'supabase' && !isProfileComplete(profile)
+  const [name, setName] = useState(profile && isValidDisplayName(profile.displayName) ? profile.displayName : '')
   const [instruments, setInstruments] = useState(profile?.instruments ?? [])
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileError, setProfileError] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState<TranslationKey | null>(null)
@@ -29,11 +33,19 @@ export function ProfilePage() {
   const [languageSheetOpen, setLanguageSheetOpen] = useState(false)
   const { language, setLanguage, t } = useI18n()
   const toggle = (instrument: string) => setInstruments((current) => current.includes(instrument) ? current.filter((item) => item !== instrument) : [...current, instrument])
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault()
-    actions.updateProfile(name.trim(), instruments)
-    const destination = takeAfterOnboardingRoute(window.localStorage)
-    navigate(destination)
+    setProfileError(false)
+    setSavingProfile(true)
+    const saved = onboarding
+      ? await completeOnboarding(name, instruments, actions.updateProfile)
+      : canCompleteOnboarding(name, instruments) && await actions.updateProfile(name.trim(), instruments)
+    setSavingProfile(false)
+    if (!saved) {
+      setProfileError(true)
+      return
+    }
+    navigate(takeAfterOnboardingRoute(window.localStorage))
   }
   const savePassword = async (event: FormEvent) => {
     event.preventDefault()
@@ -68,17 +80,32 @@ export function ProfilePage() {
     }
   }
   const initials = (profile?.displayName || name || t('profile.defaultMusician')).split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+  if (onboarding) {
+    return (
+      <main className="page form-page onboarding-page app-screen">
+        <form className="onboarding-form" onSubmit={(event) => { void submit(event) }}>
+          <label className="field onboarding-name"><span>{t('onboarding.nameQuestion')}</span><input autoFocus required value={name} onChange={(event) => setName(event.target.value)} /></label>
+          <fieldset className="instrument-picker"><legend>{t('onboarding.instrumentsQuestion')}</legend>
+            {INSTRUMENTS.map((instrument) => <button type="button" key={instrument} className={instruments.includes(instrument) ? 'active' : ''} onClick={() => toggle(instrument)}><span>{displayInstrument(instrument, t)}</span>{instruments.includes(instrument) && <Check size={17} />}</button>)}
+          </fieldset>
+          {profileError && <p className="form-error" role="alert">{t('onboarding.saveError')}</p>}
+          <button className="primary-button full-button" type="submit" disabled={!canCompleteOnboarding(name, instruments) || savingProfile}>{savingProfile ? t('common.wait') : t('onboarding.continue')}</button>
+        </form>
+      </main>
+    )
+  }
   return (
       <main className="page form-page profile-page app-screen">
         <header className="profile-header"><motion.div className="profile-avatar" layoutId="profile-avatar" aria-hidden="true">{initials}</motion.div><h1>{t('profile.title')}</h1></header>
         <section className="profile-section profile-identity-section">
           <div className="profile-section-heading"><h2>{t('profile.nameAndInstruments')}</h2></div>
-          <form onSubmit={submit}>
+          <form onSubmit={(event) => { void submit(event) }}>
             <label className="field"><span>{t('profile.displayName')}</span><input required value={name} onChange={(event) => setName(event.target.value)} /></label>
             <fieldset className="instrument-picker"><legend>{t('profile.instrumentsQuestion')}</legend>
               {INSTRUMENTS.map((instrument) => <button type="button" key={instrument} className={instruments.includes(instrument) ? 'active' : ''} onClick={() => toggle(instrument)}><span>{displayInstrument(instrument, t)}</span>{instruments.includes(instrument) && <Check size={17} />}</button>)}
             </fieldset>
-            <button className="primary-button full-button" type="submit" disabled={!instruments.length}>{t('profile.save')}</button>
+            {profileError && <p className="form-error" role="alert">{t('profile.saveError')}</p>}
+            <button className="primary-button full-button" type="submit" disabled={!canCompleteOnboarding(name, instruments) || savingProfile}>{savingProfile ? t('common.wait') : t('profile.save')}</button>
           </form>
         </section>
         <section className="profile-language-section">

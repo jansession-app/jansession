@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { PREPARATION_LABEL_KEYS, STATUS_LABEL_KEYS } from '../domain/labels'
+import { STATUS_LABEL_KEYS } from '../domain/labels'
 import type { PreparationState, SongStatus } from '../domain/types'
+import { visiblePreparationLabelKey } from '../domain/statusPresentation'
 import { translate } from './LanguageContext'
 import { en, it as italian } from './translations'
 
@@ -11,8 +12,8 @@ describe('translation dictionaries', () => {
 
   it('changes visible language without changing preparation values', () => {
     const state: PreparationState = 'UNKNOWN'
-    expect(translate('it', PREPARATION_LABEL_KEYS[state])).toBe('Non la conosco')
-    expect(translate('en', PREPARATION_LABEL_KEYS[state])).toBe('I don’t know it')
+    expect(translate('it', visiblePreparationLabelKey(state))).toBe('Da preparare')
+    expect(translate('en', visiblePreparationLabelKey(state))).toBe('To prepare')
     expect(state).toBe('UNKNOWN')
   })
 
@@ -20,7 +21,7 @@ describe('translation dictionaries', () => {
     const expected: Record<SongStatus, [string, string]> = {
       INCOMPLETE: ['Incompleto', 'Incomplete'],
       TO_PREPARE: ['Da preparare', 'To prepare'],
-      PLAYABLE: ['Suonabile', 'Playable'],
+      PLAYABLE: ['Da preparare', 'To prepare'],
       READY: ['Pronto', 'Ready'],
     }
     for (const status of Object.keys(expected) as SongStatus[]) {

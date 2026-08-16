@@ -26,6 +26,10 @@ describe('automatic push migration contracts', () => {
     expect(migration).toContain("target_event_type := case when tg_op = 'INSERT' then 'setlist_added' else 'setlist_removed' end")
   })
 
+  it('does not create push events for preparation changes', () => {
+    expect(migration).not.toMatch(/(?:before|after)\s+(?:insert|update|delete)[\s\S]{0,120}on public\.song_preparation/i)
+  })
+
   it('emits one jam event only for approved changed fields', () => {
     expect(migration).toContain('new.starts_at is distinct from old.starts_at')
     expect(migration).toContain('new.location is distinct from old.location')

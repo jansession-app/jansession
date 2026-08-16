@@ -6,7 +6,7 @@ import { JamOverviewLink } from '../components/JamOverviewLink'
 import { StatusBadge } from '../components/StatusBadge'
 import { useData } from '../data/DataContext'
 import { isManager, jamSongs, songDetails } from '../data/selectors'
-import { canAddToSetlist, statusSummary } from '../domain/songStatus'
+import { setlistWarning } from '../domain/setlistRules'
 import { useI18n } from '../i18n/LanguageContext'
 
 export function SetlistPage() {
@@ -15,7 +15,7 @@ export function SetlistPage() {
   const jam = data.jams.find((item) => item.id === jamId)
   const manager = isManager(data, jamId)
   const items = data.setlist.filter((item) => item.jamId === jamId).sort((a, b) => a.position - b.position)
-  const available = jamSongs(data, jamId).filter(({ song, details }) => canAddToSetlist(details.status) && !items.some((item) => item.songId === song.id))
+  const available = jamSongs(data, jamId).filter(({ song }) => !items.some((item) => item.songId === song.id))
   const reduceMotion = useReducedMotion()
   const { t } = useI18n()
 
@@ -31,11 +31,11 @@ export function SetlistPage() {
             const song = data.songs.find((candidate) => candidate.id === item.songId)
             if (!song) return null
             const details = songDetails(data, song).details
-            const invalid = !canAddToSetlist(details.status)
+            const warning = setlistWarning(details, t)
             return (
               <motion.li
                 key={item.id}
-                className={invalid ? 'invalid' : ''}
+                className={warning ? 'invalid' : ''}
                 layout
                 initial={reduceMotion ? false : { x: 18, scale: 0.985 }}
                 animate={{ x: 0, scale: 1 }}
@@ -45,7 +45,7 @@ export function SetlistPage() {
                 <span className="setlist-number">{String(item.position).padStart(2, '0')}</span>
                 <Link to={`/jam/${jamId}/song/${song.id}`} className="setlist-song">
                   <h3>{song.title}</h3><p>{song.artist}</p>
-                  {invalid ? <span className="setlist-warning"><TriangleAlert size={15} /> {statusSummary(details, t)}</span> : <StatusBadge status={details.status} />}
+                  {warning ? <span className="setlist-warning"><TriangleAlert size={15} /> {warning}</span> : <StatusBadge status={details.status} />}
                 </Link>
                 {manager && <div className="order-controls">
                   <motion.button whileTap={reduceMotion ? undefined : { scale: 0.88, y: -1 }} onClick={() => actions.moveSetlist(song.id, -1)} disabled={index === 0} aria-label={t('setlist.moveUpAria', { title: song.title })}><ArrowUp size={16} /></motion.button>

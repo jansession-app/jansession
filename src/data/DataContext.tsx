@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createDemoData } from './demoSeed'
-import { canAddToSetlist, deriveSongStatus } from '../domain/songStatus'
 import type { AppData, Jam, JamRole, PreparationState, RoleSlot, Song } from '../domain/types'
 import { useAuth } from '../auth/AuthGate'
 import { loadSupabaseData, remoteMutations, subscribeToCollaborativeChanges } from './supabaseRepository'
@@ -10,6 +9,8 @@ import { canDeleteJam, removeJamFromData } from './jamDeletion'
 import { canChangeJamMemberRole, canLeaveJam, canRemoveJamMember, changeJamMemberRoleInData, removeJamMemberFromData } from './jamMembership'
 import { useI18n } from '../i18n/LanguageContext'
 import type { TranslationKey } from '../i18n/translations'
+import { applyPreparationState, preparationFor, rollbackPreparationState } from './preparationState'
+import { canAddSongToSetlist } from '../domain/setlistRules'
 
 const STORAGE_KEY = STORAGE_KEYS.demo
 
@@ -42,7 +43,7 @@ interface DataActions {
   addToSetlist: (jamId: string, songId: string) => boolean
   removeFromSetlist: (songId: string) => void
   moveSetlist: (songId: string, direction: -1 | 1) => void
-  updateProfile: (displayName: string, instruments: string[]) => void
+  updateProfile: (displayName: string, instruments: string[]) => Promise<boolean>
   updateJam: (jamId: string, changes: Partial<Pick<Jam, 'name' | 'startsAt' | 'location' | 'locationAddress' | 'proposalsOpen' | 'assignmentsOpen'>>) => void
   deleteJam: (jamId: string) => Promise<boolean>
   updateMemberRole: (jamId: string, userId: string, role: JamRole) => Promise<boolean>
@@ -124,12 +125,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const actions = useMemo<DataActions>(() => ({
     setPreparation(songId, state) {
-      runRemote(() => remoteMutations.setPreparation(songId, data.currentUserId, state))
-      update((current) => {
-        const next = current.preparations.filter((item) => !(item.songId === songId && item.userId === current.currentUserId))
-        next.push({ songId, userId: current.currentUserId, state, updatedAt: new Date().toISOString() })
-        return { ...current, preparations: next }
-      })
+      const userId = data.currentUserId
+      const previous = preparationFor(data, songId, userId)
+      update((current) => applyPreparationState(current, songId, userId, state))
+      if (!isDemo) {
+        void remoteMutations.setPreparation(songId, userId, state).catch((error: unknown) => {
+          reportDataError('Preparazione Supabase non salvata', error)
+          update((current) => rollbackPreparationState(current, songId, userId, state, previous))
+          setSyncErrorKey('data.error.unsaved')
+        })
+      }
     },
     claimSlot(slotId) {
       runRemote(() => remoteMutations.claimSlot(slotId, data.currentUserId))
@@ -201,9 +206,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return jam.id
     },
     addToSetlist(jamId, songId) {
-      const songSlots = data.slots.filter((slot) => slot.songId === songId)
-      const status = deriveSongStatus(songSlots, data.assignments.filter((assignment) => songSlots.some((slot) => slot.id === assignment.slotId)), data.preparations.filter((item) => item.songId === songId)).status
-      if (!canAddToSetlist(status) || data.setlist.some((item) => item.songId === songId)) return false
+      if (!canAddSongToSetlist(data, jamId, songId)) return false
       runRemote(() => remoteMutations.addToSetlist(jamId, songId, data.setlist.filter((item) => item.jamId === jamId).length + 1))
       update((current) => ({ ...current, setlist: [...current.setlist, { id: id('set'), jamId, songId, position: current.setlist.filter((item) => item.jamId === jamId).length + 1, createdAt: new Date().toISOString() }] }))
       return true
@@ -227,9 +230,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         return { ...current, setlist: current.setlist.map((item) => item.id === moving.id ? { ...item, position: target.position } : item.id === target.id ? { ...item, position: moving.position } : item) }
       })
     },
-    updateProfile(displayName, instruments) {
-      runRemote(() => remoteMutations.updateProfile(data.currentUserId, displayName, instruments))
-      update((current) => ({ ...current, profiles: current.profiles.map((profile) => profile.id === current.currentUserId ? { ...profile, displayName, instruments, onboarded: true } : profile) }))
+    async updateProfile(displayName, instruments) {
+      setSyncErrorKey(null)
+      try {
+        if (!isDemo) await remoteMutations.updateProfile(data.currentUserId, displayName, instruments)
+        update((current) => ({ ...current, profiles: current.profiles.map((profile) => profile.id === current.currentUserId ? { ...profile, displayName, instruments, onboarded: true } : profile) }))
+        return true
+      } catch (error: unknown) {
+        reportDataError('Aggiornamento profilo Supabase non riuscito', error)
+        setSyncErrorKey('data.error.profileUpdate')
+        return false
+      }
     },
     updateJam(jamId, changes) {
       runRemote(() => remoteMutations.updateJam(jamId, changes))

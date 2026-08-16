@@ -723,6 +723,15 @@ body {
   color: var(--ink-soft);
   font-size: 10px;
 }
+.jam-todo-section { margin: 0 0 30px; padding: 17px 2px 12px; border-block: 1px solid var(--line); }
+.jam-todo-section .section-heading { margin-bottom: 5px; }
+.jam-todo-row { min-height: 64px; padding: 9px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; border-bottom: 1px solid rgb(222 217 207 / .72); }
+.jam-todo-row:last-child { border-bottom: 0; }
+.jam-todo-song { min-width: 0; display: grid; gap: 3px; color: var(--ink); }
+.jam-todo-song strong { overflow: hidden; font-size: 14px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.jam-todo-song small { color: var(--ink-soft); font-size: 10px; }
+.jam-todo-row > button { min-height: 38px; padding: 0 11px; border: 0; border-radius: 13px; background: var(--color-accent-strong); color: white; font-size: 10px; font-weight: 720; cursor: pointer; }
+.jam-todo-empty { margin: 7px 0 4px; color: var(--ink-soft); font-size: 11px; }
 .jam-overview-sections { margin-top: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .jam-overview-sections > a {
   min-height: 128px;
@@ -1064,6 +1073,13 @@ body {
 .small-button.selected { border: 0; background: rgb(216 226 212); }
 .manual-assignment select { height: 42px; border: 0; border-radius: 13px; background: rgb(235 232 224 / .72); }
 .prep-section { margin-bottom: 32px; }
+.prep-summary { margin: 24px 0 6px; padding: 18px 0; border-block: 1px solid var(--line); }
+.prep-summary .section-heading { margin-bottom: 2px; }
+.prep-summary .section-intro { margin-bottom: 14px; }
+.prep-summary-row { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.prep-summary-row strong { font-size: 18px; letter-spacing: -.025em; }
+.prep-summary-row .primary-button { min-height: 42px; width: auto; padding-inline: 15px; font-size: 11px; }
+.prep-summary-row .text-button { min-height: 40px; padding: 0; border: 0; background: transparent; color: var(--ink-soft); font-size: 10px; font-weight: 700; cursor: pointer; }
 .prep-options { border-top: 0; }
 .prep-options button { min-height: 64px; padding: 10px 9px; position: relative; overflow: hidden; border-bottom-color: rgb(222 217 207 / .82); }
 .prep-options button.active { background: transparent; }
@@ -1090,6 +1106,14 @@ body {
 .my-group-heading { margin-bottom: 6px; }
 .my-song { min-height: 66px; }
 .instrument-tag { border: 0; background: rgb(235 232 224 / .72); }
+
+.onboarding-page { max-width: 620px; padding-top: max(42px, env(safe-area-inset-top)); }
+.onboarding-form { min-height: calc(100% - 24px); display: flex; flex-direction: column; gap: 30px; }
+.onboarding-name > span, .onboarding-form .instrument-picker > legend { color: var(--ink); font-size: clamp(1.7rem, 8vw, 3rem); font-weight: 760; line-height: 1; letter-spacing: -.045em; text-transform: none; }
+.onboarding-name input { height: 58px; margin-top: 15px; font-size: 18px; }
+.onboarding-form .instrument-picker { margin-top: 4px; }
+.onboarding-form .instrument-picker > legend { margin-bottom: 18px; }
+.onboarding-form > .primary-button { margin-top: auto; }
 
 .sheet-description { color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
 .sheet-description p { margin: 0; }

@@ -1,4 +1,4 @@
-import type { Assignment, Preparation, Profile, RoleSlot, SongStatus, StatusDetails } from './types'
+import type { Assignment, Preparation, Profile, RoleSlot, StatusDetails } from './types'
 import type { Translate } from '../i18n/LanguageContext'
 import { INSTRUMENT_LABEL_KEYS } from './labels'
 
@@ -51,10 +51,6 @@ export function deriveSongStatus(
   }
 }
 
-export function canAddToSetlist(status: SongStatus) {
-  return status === 'PLAYABLE' || status === 'READY'
-}
-
 export function displayInstrument(instrument: string, t: Translate): string {
   const key = INSTRUMENT_LABEL_KEYS[instrument]
   return key ? t(key) : instrument
@@ -71,6 +67,6 @@ export function statusSummary(details: StatusDetails, t: Translate): string {
     if (details.musiciansToPrepare.length === 1) return t('status.summary.oneToPrepare', { name: details.musiciansToPrepare[0] ?? '' })
     return t('status.summary.manyToPrepare', { count: details.musiciansToPrepare.length })
   }
-  if (details.status === 'PLAYABLE') return t('status.summary.playable')
+  if (details.status === 'PLAYABLE') return t('status.toPrepare')
   return t('status.summary.ready')
 }

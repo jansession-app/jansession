@@ -7,13 +7,10 @@ import { ConfirmSheet } from '../components/ConfirmSheet'
 import { StatusBadge } from '../components/StatusBadge'
 import { useData } from '../data/DataContext'
 import { isManager, songDetails } from '../data/selectors'
-import { PREPARATION_HELP_KEYS, PREPARATION_LABEL_KEYS } from '../domain/labels'
 import { displayInstrument, statusSummary } from '../domain/songStatus'
-import type { PreparationState } from '../domain/types'
+import { preparationStateForAction, visiblePreparationLabelKey, visiblePreparationState, visibleSongStatus } from '../domain/statusPresentation'
 import { jamRoutes } from '../navigation'
 import { useI18n } from '../i18n/LanguageContext'
-
-const PREPARATION_OPTIONS: PreparationState[] = ['UNKNOWN', 'NEEDS_LISTENING', 'KNOWS_STRUCTURE', 'READY']
 
 export function SongDetailPage() {
   const { jamId = '', songId = '' } = useParams()
@@ -28,6 +25,7 @@ export function SongDetailPage() {
   const me = data.profiles.find((profile) => profile.id === data.currentUserId)
   const mySlots = slots.filter((slot) => assignments.some((assignment) => assignment.slotId === slot.id && assignment.userId === data.currentUserId))
   const myPreparation = preparations.find((item) => item.userId === data.currentUserId)?.state ?? 'UNKNOWN'
+  const visibleMyPreparation = visiblePreparationState(myPreparation)
   const manager = isManager(data, jamId)
   const jam = data.jams.find((item) => item.id === jamId)
   const canDelete = manager || song.proposerId === data.currentUserId
@@ -41,10 +39,23 @@ export function SongDetailPage() {
         <div className="song-context-row"><span>{t('song.proposedBy', { name: data.profiles.find((profile) => profile.id === song.proposerId)?.displayName ?? '' })}</span><div>{song.listeningUrl && <a className="listen-link" href={song.listeningUrl} target="_blank" rel="noreferrer"><Headphones size={18} /> {t('song.listen')} <ExternalLink size={15} /></a>}{canDelete && <Link className="context-action" to={`/jam/${jamId}/song/${song.id}/edit`}><Pencil size={15} /> {t('common.edit')}</Link>}</div></div>
       </section>
 
-      <motion.section className={`status-panel status-${details.status.toLowerCase()}`} layout transition={{ type: 'spring', stiffness: 420, damping: 36 }}>
+      <motion.section className={`status-panel status-${visibleSongStatus(details.status).toLowerCase()}`} layout transition={{ type: 'spring', stiffness: 420, damping: 36 }}>
         <div className="status-panel-heading"><StatusBadge status={details.status} large /><span>{t('song.rolesCount', { occupied: details.occupiedSlots, total: details.totalSlots })}</span></div>
         <AnimatePresence mode="wait" initial={false}>{statusDetail && <motion.p key={statusDetail} initial={reduceMotion ? false : { x: 10 }} animate={{ x: 0 }} exit={reduceMotion ? undefined : { x: -10 }} transition={{ type: 'spring', stiffness: 440, damping: 34 }}>{statusDetail}</motion.p>}</AnimatePresence>
       </motion.section>
+
+      {mySlots.length > 0 && (
+        <motion.section className="section-block prep-section prep-summary" layout>
+          <div className="section-heading"><div><h2>{t('song.yourStatus')}</h2></div></div>
+          <p className="section-intro">{t('song.youPlay', { instruments: mySlots.map((slot) => displayInstrument(slot.instrument, t)).join(', ') })}</p>
+          <div className="prep-summary-row">
+            <AnimatePresence initial={false} mode="wait"><motion.strong key={visibleMyPreparation} initial={reduceMotion ? false : { x: 10 }} animate={{ x: 0 }} exit={reduceMotion ? undefined : { x: -10 }} transition={{ type: 'spring', stiffness: 440, damping: 34 }}>{t(visiblePreparationLabelKey(myPreparation))}</motion.strong></AnimatePresence>
+            {visibleMyPreparation === 'TO_PREPARE'
+              ? <motion.button className="primary-button" type="button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => actions.setPreparation(song.id, preparationStateForAction('READY'))}>{t('preparation.markReady')}</motion.button>
+              : <motion.button className="text-button" type="button" whileTap={reduceMotion ? undefined : { scale: 0.96 }} onClick={() => actions.setPreparation(song.id, preparationStateForAction('TO_PREPARE'))}>{t('preparation.markToPrepare')}</motion.button>}
+          </div>
+        </motion.section>
+      )}
 
       <section className="section-block formation-section">
         <div className="section-heading"><div><h2>{t('song.formation')}</h2></div></div>
@@ -64,7 +75,7 @@ export function SongDetailPage() {
                 <div className="slot-person">
                   <AnimatePresence mode="popLayout" initial={false}><motion.span key={musician?.id ?? 'empty'} initial={reduceMotion ? false : { x: 10, scale: 0.98 }} animate={{ x: 0, scale: 1 }} exit={reduceMotion ? undefined : { x: -10, scale: 0.98 }} transition={{ type: 'spring', stiffness: 440, damping: 34 }}><strong>{musician?.displayName ?? t('song.nobody')}</strong>{!musician && <small>{candidates.length ? t('song.compatibleAvailable', { names: candidates.map((profile) => profile.displayName).join(', ') }) : t('song.noCompatibleMusician')}</small>}</motion.span></AnimatePresence>
                 </div>
-                {musician && <span className="slot-state">{t(PREPARATION_LABEL_KEYS[prep ?? 'UNKNOWN'])}</span>}
+                {musician && <span className="slot-state">{t(visiblePreparationLabelKey(prep ?? 'UNKNOWN'))}</span>}
                 {assignment?.userId === data.currentUserId || (assignment && manager) ? (
                   <motion.button whileTap={reduceMotion ? undefined : { scale: 0.9 }} type="button" className="row-action" aria-label={assignment.userId === data.currentUserId ? t('song.leaveRoleAria', { instrument: displayInstrument(slot.instrument, t) }) : t('song.removeAssignmentAria', { name: musician?.displayName ?? '', instrument: displayInstrument(slot.instrument, t) })} onClick={() => assignment.userId === data.currentUserId ? actions.leaveSlot(slot.id) : actions.removeAssignment(slot.id)}>{t(assignment.userId === data.currentUserId ? 'song.leaveRole' : 'song.removeAssignment')}</motion.button>
                 ) : !assignment && canPlay ? (
@@ -83,21 +94,6 @@ export function SongDetailPage() {
         </motion.div>
       </section>
 
-      {mySlots.length > 0 && (
-        <section className="section-block prep-section">
-          <div className="section-heading"><div><h2>{t('song.yourStatus')}</h2></div></div>
-          <p className="section-intro">{t('song.youPlay', { instruments: mySlots.map((slot) => displayInstrument(slot.instrument, t)).join(', ') })}</p>
-          <motion.div className="prep-options" role="radiogroup" aria-label={t('song.preparationAria')} layout>
-            {PREPARATION_OPTIONS.map((state) => (
-              <motion.button layout whileTap={reduceMotion ? undefined : { scale: 0.985 }} type="button" key={state} role="radio" aria-checked={myPreparation === state} className={myPreparation === state ? 'active' : ''} onClick={() => actions.setPreparation(song.id, state)}>
-                {myPreparation === state && <motion.span className="prep-selected-surface" layoutId={`prep-selection-${song.id}`} transition={{ type: 'spring', stiffness: 470, damping: 36 }} />}
-                <span className="radio-dot" aria-hidden="true" />
-                <span><strong>{t(PREPARATION_LABEL_KEYS[state])}</strong><small>{t(PREPARATION_HELP_KEYS[state])}</small></span>
-              </motion.button>
-            ))}
-          </motion.div>
-        </section>
-      )}
       {canDelete && <section className="danger-zone"><strong>{t('song.proposal')}</strong><button onClick={() => setRemoveSheetOpen(true)}><Trash2 size={17} /> {t('common.remove')}</button></section>}
       <div className="bottom-spacer" />
       <ConfirmSheet open={removeSheetOpen} title={t('song.removeTitle', { title: song.title })} description={t('song.removeDescription')} confirmLabel={t('song.removeConfirm')} danger onClose={() => setRemoveSheetOpen(false)} onConfirm={() => { actions.removeSong(song.id); navigate(`/jam/${jamId}/songs`) }} />

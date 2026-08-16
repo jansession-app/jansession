@@ -6,6 +6,7 @@ import { useData } from '../data/DataContext'
 import { preserveAfterOnboardingRoute } from '../invites/inviteFlow'
 import { activeGlobalNavigation, GLOBAL_NAVIGATION } from '../navigation'
 import { useI18n } from '../i18n/LanguageContext'
+import { isProfileComplete } from '../domain/profileOnboarding'
 
 export function RootShell() {
   const { data, mode, loading, syncError } = useData()
@@ -25,11 +26,12 @@ export function RootShell() {
 
   if (loading) return <div className="auth-loading"><span>{t('common.loading')}</span></div>
   const profile = mode === 'supabase' ? data.profiles.find((item) => item.id === data.currentUserId) : null
-  if (mode === 'supabase' && profile && !profile.onboarded && location.pathname !== '/profile') {
+  const onboardingRequired = mode === 'supabase' && !isProfileComplete(profile)
+  if (onboardingRequired && location.pathname !== '/profile') {
     preserveAfterOnboardingRoute(location.pathname, window.localStorage)
     return <Navigate to="/profile" replace />
   }
-  const showNavigation = !location.pathname.startsWith('/join/')
+  const showNavigation = !location.pathname.startsWith('/join/') && !onboardingRequired
   return (
     <LayoutGroup id="app-navigation">
       <div className="app-root">

@@ -5,11 +5,12 @@ import { EmptyState } from '../components/EmptyState'
 import { SongCard } from '../components/SongCard'
 import { useData } from '../data/DataContext'
 import { formatCompactJamDate, jamsForUser, songDetails } from '../data/selectors'
+import { personalSongAssignments } from '../data/personalPreparation'
 import { PRODUCT_NAME } from '../config/brand'
-import { PREPARATION_LABEL_KEYS } from '../domain/labels'
 import { jamRoutes } from '../navigation'
 import { useI18n } from '../i18n/LanguageContext'
 import { displayInstrument } from '../domain/songStatus'
+import { visiblePreparationLabelKey } from '../domain/statusPresentation'
 
 const MotionLink = motion.create(Link)
 
@@ -17,17 +18,9 @@ export function HomePage() {
   const { data } = useData()
   const me = data.profiles.find((profile) => profile.id === data.currentUserId)
   const myJams = jamsForUser(data)
-  const myAssignments = data.assignments
-    .filter((assignment) => assignment.userId === data.currentUserId)
-    .flatMap((assignment) => {
-      const slot = data.slots.find((item) => item.id === assignment.slotId)
-      const song = slot && data.songs.find((item) => item.id === slot.songId)
-      if (!slot || !song) return []
-      const state = data.preparations.find((item) => item.songId === song.id && item.userId === data.currentUserId)?.state ?? 'UNKNOWN'
-      return [{ song, slot, state, details: songDetails(data, song).details }]
-    })
-  const workload = myAssignments.filter(({ state }) => state === 'UNKNOWN' || state === 'NEEDS_LISTENING')
-  const prepared = myAssignments.filter(({ state }) => state === 'KNOWS_STRUCTURE' || state === 'READY')
+  const myAssignments = personalSongAssignments(data).map((item) => ({ ...item, details: songDetails(data, item.song).details }))
+  const workload = myAssignments.filter(({ state }) => state !== 'READY')
+  const prepared = myAssignments.filter(({ state }) => state === 'READY')
   const reduceMotion = useReducedMotion()
   const { language, t } = useI18n()
 
@@ -81,14 +74,14 @@ export function HomePage() {
           </div>
           {workload.length ? (
             <div className="card-list">
-              <AnimatePresence initial={false}>{workload.map(({ song, slot, details, state }) => <SongCard key={`${song.id}-${slot.id}`} jamId={song.jamId} song={song} details={details} assignmentLabel={`${displayInstrument(slot.instrument, t)} · ${t(PREPARATION_LABEL_KEYS[state])}`} />)}</AnimatePresence>
+              <AnimatePresence initial={false}>{workload.map(({ song, instruments, details, state }) => <SongCard key={song.id} jamId={song.jamId} song={song} details={details} assignmentLabel={`${instruments.map((instrument) => displayInstrument(instrument, t)).join(' · ')} · ${t(visiblePreparationLabelKey(state))}`} />)}</AnimatePresence>
             </div>
           ) : <EmptyState icon={CalendarDays} title={t('home.allCaughtUp')} body={t('home.noPreparationNeeded')} />}
       </section>
 
       {prepared.length > 0 && <details className="prepared-details">
         <summary>{t('home.preparedSongs')} <span>{prepared.length}</span><ChevronDown size={16} aria-hidden="true" /></summary>
-        <div className="prepared-disclosure"><div className="prepared-content">{prepared.map(({ song, slot, state }) => <Link key={`${song.id}-${slot.id}`} to={`/jam/${song.jamId}/song/${song.id}`} className="prepared-row"><span><strong>{song.title}</strong><small>{song.artist}</small></span><span>{displayInstrument(slot.instrument, t)}</span><em>{t(PREPARATION_LABEL_KEYS[state])}</em></Link>)}</div></div>
+        <div className="prepared-disclosure"><div className="prepared-content">{prepared.map(({ song, instruments, state }) => <Link key={song.id} to={`/jam/${song.jamId}/song/${song.id}`} className="prepared-row"><span><strong>{song.title}</strong><small>{song.artist}</small></span><span>{instruments.map((instrument) => displayInstrument(instrument, t)).join(' · ')}</span><em>{t(visiblePreparationLabelKey(state))}</em></Link>)}</div></div>
       </details>}
     </main>
   )

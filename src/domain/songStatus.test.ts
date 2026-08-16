@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canAddToSetlist, deriveSongStatus } from './songStatus'
+import { deriveSongStatus } from './songStatus'
 import type { Assignment, Preparation, RoleSlot } from './types'
 
 const slots: RoleSlot[] = ['Voce', 'Chitarra', 'Basso', 'Batteria'].map((instrument, index) => ({
@@ -54,11 +54,10 @@ describe('deriveSongStatus', () => {
     expect(deriveSongStatus(slots, assignments, assignments.map(({ userId }) => preparation(userId, 'READY'))).status).toBe('READY')
   })
 
-  it('keeps an invalidated song in the setlist and exposes its warning state', () => {
+  it('keeps an invalidated song state available for setlist warnings', () => {
     const setlistSongIds = ['song']
     const status = deriveSongStatus(slots, [assignment(0, 'a'), assignment(1, 'b'), assignment(2, 'c')], [])
     expect(setlistSongIds).toContain('song')
-    expect(canAddToSetlist(status.status)).toBe(false)
     expect(status.missingInstruments).toContain('Batteria')
   })
 })
