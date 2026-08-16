@@ -33,4 +33,13 @@ describe('translation dictionaries', () => {
   it('interpolates dynamic values centrally', () => {
     expect(translate('en', 'home.greeting', { name: 'Gian' })).toBe('Hi Gian')
   })
+
+  it('translates the proposal lineup confirmation in Italian and English', () => {
+    expect(translate('it', 'songForm.checkLineup')).toBe('Controlla la formazione')
+    expect(translate('en', 'songForm.checkLineup')).toBe('Check the lineup')
+    expect(translate('it', 'songForm.confirmPublish')).toBe('Sì, pubblica')
+    expect(translate('en', 'songForm.confirmPublish')).toBe('Yes, publish')
+    expect(translate('it', 'songForm.emptyLineupError')).toBe('Aggiungi almeno un ruolo.')
+    expect(translate('en', 'songForm.emptyLineupError')).toBe('Add at least one role.')
+  })
 })
